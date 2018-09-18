@@ -1,0 +1,23 @@
+{
+  "UserAgent": "MobileHub/1.0",
+  "Version": "1.0",
+  "CredentialsProvider": {
+    "CognitoIdentity": {
+      "Default": {
+        "PoolId": "Replace with your Amazon Cognito Identity pool id",
+        "Region": "Replace with your Amazon Cognito region, eg: us-west-2"
+      }
+    }
+  },
+  "IdentityManager": {
+    "Default": {}
+  },
+  "CognitoUserPool": {
+    "Default": {
+      "PoolId": "Replace with your Amazon Cognito User Pool id.",
+      "AppClientId": "Replace with your Amazon Cognito User Pool App client id.",
+      "AppClientSecret": "Replace with your Amazon Cognito User Pool App client secret",
+      "Region": "Replace with your Amazon Cognito region, eg: us-west-2"
+    }
+  }
+}

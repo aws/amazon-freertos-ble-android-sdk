@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_main"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    tools:context="com.amazon.aws.freertosandroid.MainActivity">
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="AmazonFreeRTOS demo app"/>
+
+    <Button
+        android:layout_width="300dp"
+        android:layout_height="60dp"
+        android:text="[Step 1]  Scan"
+        android:id="@+id/scanbutton"
+        android:layout_centerInParent="true"
+        android:layout_marginTop="14dp"/>
+
+    <Switch
+        android:id="@+id/connectswitch"
+        android:layout_width="180dp"
+        android:layout_height="60dp"
+        android:checked="false"
+        android:enabled="false"
+        android:text="[Step 2]  Connect"
+        android:textOff="Disconnected"
+        android:textOn="Connected"/>
+
+    <Button
+        android:layout_width="300dp"
+        android:layout_height="60dp"
+        android:text="[Step 3]  Discover"
+        android:id="@+id/discoverButton"/>
+
+    <Button
+        android:id="@+id/mtuButton"
+        android:layout_width="300dp"
+        android:layout_height="60dp"
+        android:text="[Step 4]  Set MTU"/>
+
+    <Switch
+        android:id="@+id/proxyControlSwitch"
+        android:layout_width="180dp"
+        android:layout_height="60dp"
+        android:checked="false"
+        android:enabled="false"
+        android:text="[Step 5]   Mqtt Proxy"/>
+
+    <Button
+        android:id="@+id/signoutButton"
+        android:layout_width="wrap_content"
+        android:layout_height="60dp"
+        android:text="Sign Out"/>
+
+</LinearLayout>
