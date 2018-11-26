@@ -16,7 +16,7 @@
     "Default": {
       "PoolId": "Replace with your Amazon Cognito User Pool id, eg: us-west-2_AbCD12345",
       "AppClientId": "Replace with your Amazon Cognito User Pool App client id, eg: 12345678grps001gpgsabcdefg",
-      "AppClientSecret": "Replace with your Amazon Cognito User Pool App client secret (click "Show details")",
+      "AppClientSecret": "Replace with your Amazon Cognito User Pool App client secret, click Show details",
       "Region": "Replace with your Amazon Cognito region, eg: us-west-2"
     }
   }
