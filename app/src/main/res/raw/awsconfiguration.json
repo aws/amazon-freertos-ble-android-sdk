@@ -4,8 +4,8 @@
   "CredentialsProvider": {
     "CognitoIdentity": {
       "Default": {
-        "PoolId": "Replace with your Amazon Cognito Identity pool id, eg: us-west-2:1234abc-1234-5678-9012-abcdef123456",
-        "Region": "Replace with your Amazon Cognito region, eg: us-west-2"
+        "PoolId": "Federated Identities -> Edit identity pool -> Identity pool ID. (eg. us-west-2:fc4d19b1-873f-44d8-bdcf-3a8e7aabf3ea)",
+        "Region": "Your Region. (eg. us-east-1)"
       }
     }
   },
@@ -14,10 +14,10 @@
   },
   "CognitoUserPool": {
     "Default": {
-      "PoolId": "Replace with your Amazon Cognito User Pool id, eg: us-west-2_AbCD12345",
-      "AppClientId": "Replace with your Amazon Cognito User Pool App client id, eg: 12345678grps001gpgsabcdefg",
-      "AppClientSecret": "Replace with your Amazon Cognito User Pool App client secret, click Show details",
-      "Region": "Replace with your Amazon Cognito region, eg: us-west-2"
+      "PoolId": "UserPool -> General settings -> Pool Id. (eg. us-east-1_example)",
+      "AppClientId": "UserPool -> General settings -> App clients -> Show Details. (eg. 3tcegaot7efa8abgn1fxnebq5)",
+      "AppClientSecret": "UserPool -> General settings -> App clients -> Show Details. (eg. dse11rx91vs1t9600uacc0ssw1byju8em3k60271n748s26ts9l)",
+      "Region": "Your Region. (eg. us-east-1)"
     }
   }
 }

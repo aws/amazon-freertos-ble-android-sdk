@@ -17,15 +17,15 @@ Android 8.0 (API level 26) or higher.
 
 ## Setting up
 
-To connect to the AWS IoT via mqtt, Cognito setup is required. Amazon Cognito provides authentication, authorization, and user management for your web and mobile apps, It allows the end user of the app to access the your AWS services such AWS IoT. (https://docs.aws.amazon.com/iot/latest/developerguide/protocols.html#mqtt-ws).
+To connect to AWS IoT via MQTT, Cognito setup is required. Amazon Cognito provides authentication, authorization, and user management for your web and mobile apps. It allows the end user of the app to access the your AWS services such AWS IoT. (https://docs.aws.amazon.com/iot/latest/developerguide/protocols.html#mqtt-ws).
 
 **Step 1 - Create AWS IoT Policy**
 
 AWS IoT policies are used to authorize your device to perform AWS IoT operations, such as subscribing or publishing to MQTT topics.
 If your are using the AWS Console, a step by step guide can be found here (https://docs.aws.amazon.com/iot/latest/developerguide/create-iot-policy.html).
 
-> When adding the statements, switch to advanced mode, and put in the sample policy JSON.
-> Because we are using cognito and not device cert, we don't need to attach the policy to device cert, instead, we attach it to a cognito identity using the AttachPrincipalPolicy API.
+> When adding the statements, switch to advanced mode, and paste in the sample policy JSON.
+> Because we are using Cognito and not a device certificate, we don't need to attach the policy to device certificate, instead, we attach it to a Cognito identity using the AttachPrincipalPolicy API.
 
 If your using the AWS API or SDK, please use the CreatePolicy API (https://docs.aws.amazon.com/iot/latest/apireference/API_CreatePolicy.html).
 
@@ -55,11 +55,11 @@ If your using the AWS API or SDK, please use the CreatePolicy API (https://docs.
 ```
 **Step 2 - Create Federated Identity Pool**
 
-Customer needs to create an identity pool that can be attached to the IoT Policy, Customer needs to create an authenticated role (or unauthenticated role if needed, step 3 of the guide) and add the policies below, a step by step guide can be found here (https://docs.aws.amazon.com/cognito/latest/developerguide/getting-started-with-identity-pools.html).
+Create an identity pool that can be attached to the IoT Policy, Create an authenticated role (or unauthenticated role if needed, step 3 of the guide) and add the policies below. A step by step guide can be found here (https://docs.aws.amazon.com/cognito/latest/developerguide/getting-started-with-identity-pools.html).
 
 **Step 3 - Create Cognito IAM Role Permissions Policies**
 
-IAM > Roles > Cognito auth (or unauth if supported) role > Permissions > Permissions policies. We need to additionally allow AttachPrincipalPolicy so that we can attach the Cognito Identity to the AWS IoT Policy.
+IAM > Roles > Cognito auth (or unauthenticated if supported) role > Permissions > Permissions policies. We need to additionally allow AttachPrincipalPolicy so that we can attach the Cognito Identity to the AWS IoT Policy.
 
 
 ```
@@ -142,7 +142,10 @@ There is a sample app under the folder _**app**_ to show how to use the Amazon F
 
 The sample app consists of two activities. _**AuthenticatorActivity**_ is a sign-in page, which shows an example of how to authenticate app users. _**MainActivity**_ shows how to scan for AmazonFreeRTOS device and enable the MQTT proxy.
 
-Before building the app, replace the credentials ids and regions at the top of each activity, and in res/raw/awsconfiguration.json
+Before building the app,
+1. In AuthenticatorActivity.java, replace the following variables: AWS_IOT_POLICY_NAME, AWS_IOT_REGION, COGNITO_POOL_ID, COGNITO_REGION.
+2. In MainActivity.java, replace the following variables: BLE_DEVICE_MAC_ADDR, BLE_DEVICE_NAME, MTU.
+3. In res/raw/awsconfiguration.json, replace your Cognito Identity Pool Id and User Pool Id.
 
 You may either build and install the sample using command line or using Android Studio after enabling "USB debugging" on your Android device. To use command line:
 ```
