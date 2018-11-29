@@ -2,18 +2,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.amazon.aws.freertosandroid">
 
-
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <!-- initiate device discovery and manipulate bluetooth settings -->
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <!-- allow scan BLE -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
     <!-- AWS Mobile SDK -->
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
-    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
+        android:required="true"/>
 
     <application
         android:allowBackup="true"
@@ -28,12 +29,26 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-
-        <activity android:name=".MainActivity">
+        <activity
+            android:name=".MqttProxyActivity"
+            android:parentActivityName=".DeviceScanActivity">
             <intent-filter>
                 <action android:name="com.amazon.aws.freertosandroid.MainActivity"/>
+
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
+        </activity>
+        <activity
+            android:name=".DeviceScanActivity"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="com.amazon.aws.freertosandroid.DeviceScanActivity"/>
+
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
+        <activity android:name=".WifiProvisionActivity"
+                  android:parentActivityName=".DeviceScanActivity">
         </activity>
     </application>
 

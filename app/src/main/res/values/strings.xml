@@ -1,3 +1,22 @@
 <resources>
     <string name="app_name">AmazonFreeRTOS Demo</string>
+    <string name="title">AmazonFreeRTOS demo app</string>
+    <string name="scan_button">Scan for BLE devices</string>
+    <string name="mqtt_switch">Mqtt Proxy</string>
+    <string name="signout_button">Sign Out</string>
+
+    <string name="device_name">Device name</string>
+    <string name="device_mac">Device MAC</string>
+    <string name="device_mtu">MTU:  </string>
+    <string name="set_mtu_menu_text">Set MTU</string>
+    <string name="wifi_provisioning_menu_text">WiFi Provisioning</string>
+    <string name="mqtt_proxy_menu_text">MQTT Proxy</string>
+    <string name="menu">More...</string>
+
+    <string name="ssid_name">SSID</string>
+    <string name="rssi_value">RSSI: %1$d</string>
+    <string name="bssid">BSSID</string>
+
+    <string name="wifi_credential_dialog_title">Save WiFi network</string>
+    <string name="password_hint">Password</string>
 </resources>

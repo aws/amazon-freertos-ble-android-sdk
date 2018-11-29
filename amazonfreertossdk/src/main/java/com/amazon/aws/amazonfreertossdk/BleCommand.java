@@ -1,8 +1,11 @@
 package com.amazon.aws.amazonfreertossdk;
 
+import lombok.Getter;
+
 /**
  * This class defines the BLE command that is sent from SDK to device.
  */
+@Getter
 public class BleCommand {
     enum CommandType {
         WRITE_DESCRIPTOR,
@@ -55,21 +58,5 @@ public class BleCommand {
         characteristicUuid = cUuid;
         serviceUuid = sUuid;
         data = null;
-    }
-
-    public CommandType getType() {
-        return type;
-    }
-
-    public String getCharacteristicUuid() {
-        return characteristicUuid;
-    }
-
-    public String getServiceUuid() {
-        return serviceUuid;
-    }
-
-    public String getData() {
-        return data;
     }
 }

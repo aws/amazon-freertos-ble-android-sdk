@@ -34,6 +34,14 @@ import com.amazon.aws.amazonfreertossdk.mqttproxy.Suback;
 import com.amazon.aws.amazonfreertossdk.mqttproxy.Subscribe;
 import com.amazon.aws.amazonfreertossdk.mqttproxy.Unsuback;
 import com.amazon.aws.amazonfreertossdk.mqttproxy.Unsubscribe;
+import com.amazon.aws.amazonfreertossdk.networkconfig.DeleteNetworkReq;
+import com.amazon.aws.amazonfreertossdk.networkconfig.DeleteNetworkResp;
+import com.amazon.aws.amazonfreertossdk.networkconfig.EditNetworkReq;
+import com.amazon.aws.amazonfreertossdk.networkconfig.EditNetworkResp;
+import com.amazon.aws.amazonfreertossdk.networkconfig.ListNetworkReq;
+import com.amazon.aws.amazonfreertossdk.networkconfig.ListNetworkResp;
+import com.amazon.aws.amazonfreertossdk.networkconfig.SaveNetworkReq;
+import com.amazon.aws.amazonfreertossdk.networkconfig.SaveNetworkResp;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttClientStatusCallback;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttManager;
@@ -75,6 +83,7 @@ public class AmazonFreeRTOSManager {
 
     private BleScanResultCallback mBleScanResultCallback;
     private BleConnectionStatusCallback mBleConnectionStatusCallback;
+    private NetworkConfigCallback mNetworkConfigCallback;
     private DeviceInfoCallback mDeviceInfoCallback;
 
     private AWSIotMqttManager mIotMqttManager;
@@ -364,6 +373,14 @@ public class AmazonFreeRTOSManager {
                             UUID_MQTT_PROXY_TX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE));
                     sendBleCommand(new BleCommand(CommandType.WRITE_DESCRIPTOR,
                             UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE));
+                    sendBleCommand(new BleCommand(CommandType.WRITE_DESCRIPTOR,
+                            UUID_LIST_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE));
+                    sendBleCommand(new BleCommand(CommandType.WRITE_DESCRIPTOR,
+                            UUID_SAVE_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE));
+                    sendBleCommand(new BleCommand(CommandType.WRITE_DESCRIPTOR,
+                            UUID_DELETE_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE));
+                    sendBleCommand(new BleCommand(CommandType.WRITE_DESCRIPTOR,
+                            UUID_EDIT_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE));
                     getMtu();
                 } else {
                     Log.e(TAG, "onServicesDiscovered received: " + status);
@@ -380,6 +397,30 @@ public class AmazonFreeRTOSManager {
 
                 Gson gson = new Gson();
                 switch (characteristic.getUuid().toString()) {
+                    case UUID_LIST_NETWORK_CHARACTERISTIC:
+                        ListNetworkResp listNetworkResp = gson.fromJson(responseStr, ListNetworkResp.class);
+                        if (mNetworkConfigCallback != null) {
+                            mNetworkConfigCallback.onListNetworkResponse(listNetworkResp);
+                        }
+                        break;
+                    case UUID_SAVE_NETWORK_CHARACTERISTIC:
+                        SaveNetworkResp saveNetworkResp = gson.fromJson(responseStr, SaveNetworkResp.class);
+                        if (mNetworkConfigCallback != null) {
+                            mNetworkConfigCallback.onSaveNetworkResponse(saveNetworkResp);
+                        }
+                        break;
+                    case UUID_EDIT_NETWORK_CHARACTERISTIC:
+                        EditNetworkResp editNetworkResp = gson.fromJson(responseStr, EditNetworkResp.class);
+                        if (mNetworkConfigCallback != null) {
+                            mNetworkConfigCallback.onEditNetworkResponse(editNetworkResp);
+                        }
+                        break;
+                    case UUID_DELETE_NETWORK_CHARACTERISTIC:
+                        DeleteNetworkResp deleteNetworkResp = gson.fromJson(responseStr, DeleteNetworkResp.class);
+                        if (mNetworkConfigCallback != null) {
+                            mNetworkConfigCallback.onDeleteNetworkResponse(deleteNetworkResp);
+                        }
+                        break;
                     case UUID_MQTT_PROXY_CONTROL_CHARACTERISTIC:
                         Log.i(TAG, "MQTT proxy control characteristic "
                                 + characteristic.getStringValue(0));
@@ -599,32 +640,36 @@ public class AmazonFreeRTOSManager {
             Log.e(TAG, "Cannot subscribe because mqtt state is not connected.");
             return;
         }
-        try {
-            byte[] data = Base64.getDecoder().decode(subscribe.topics[0]);
-            String topic = new String(data);
-            Log.i(TAG, "Subscribing to IoT on topic : " + topic);
-            AWSIotMqttQos qos = subscribe.qoSs[0] == 0 ? AWSIotMqttQos.QOS0 : AWSIotMqttQos.QOS1;
-            mIotMqttManager.subscribeToTopic(topic,  qos, new AWSIotMqttNewMessageCallback() {
-                @Override
-                public void onMessageArrived(final String topic, final byte[] data) {
-                    try {
-                        String message = new String(data, "UTF-8");
-                        Log.i(TAG, " Message arrived on topic: " + topic + ";  message: " + message);
-                        Publish publish = new Publish(
-                                MQTT_MSG_PUBLISH,
-                                Base64.getEncoder().encodeToString(topic.getBytes()),
-                                mMessageId,
-                                subscribe.qoSs[0],
-                                Base64.getEncoder().encodeToString(data)
-                        );
-                        publishToDevice(publish);
-                    } catch (UnsupportedEncodingException e) {
-                        Log.e(TAG, "Message encoding error.", e);
+
+        for (int i = 0; i < subscribe.topics.length; i++) {
+            try {
+                byte[] data = Base64.getDecoder().decode(subscribe.topics[i]);
+                String topic = new String(data);
+                Log.i(TAG, "Subscribing to IoT on topic : " + topic);
+                final int QoS = subscribe.qoSs[i];
+                AWSIotMqttQos qos = (QoS == 0 ? AWSIotMqttQos.QOS0 : AWSIotMqttQos.QOS1);
+                mIotMqttManager.subscribeToTopic(topic, qos, new AWSIotMqttNewMessageCallback() {
+                    @Override
+                    public void onMessageArrived(final String topic, final byte[] data) {
+                        try {
+                            String message = new String(data, "UTF-8");
+                            Log.i(TAG, " Message arrived on topic: " + topic + ";  message: " + message);
+                            Publish publish = new Publish(
+                                    MQTT_MSG_PUBLISH,
+                                    Base64.getEncoder().encodeToString(topic.getBytes()),
+                                    mMessageId,
+                                    QoS,
+                                    Base64.getEncoder().encodeToString(data)
+                            );
+                            publishToDevice(publish);
+                        } catch (UnsupportedEncodingException e) {
+                            Log.e(TAG, "Message encoding error.", e);
+                        }
                     }
-                }
-            });
-        } catch (Exception e) {
-            Log.e(TAG, "Subscription error.", e);
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Subscription error.", e);
+            }
         }
     }
 
@@ -650,13 +695,16 @@ public class AmazonFreeRTOSManager {
             Log.e(TAG, "Cannot unsubscribe because mqtt state is not connected.");
             return;
         }
-        try {
-            byte[] data = Base64.getDecoder().decode(unsubscribe.topics[0]);
-            String topic = new String(data);
-            Log.i(TAG, "UnSubscribing to IoT on topic : " + topic);
-            mIotMqttManager.unsubscribeTopic(topic);
-        } catch (Exception e) {
-            Log.e(TAG, "Unsubscribe error.", e);
+
+        for (int i = 0; i < unsubscribe.topics.length; i++) {
+            try {
+                byte[] data = Base64.getDecoder().decode(unsubscribe.topics[i]);
+                String topic = new String(data);
+                Log.i(TAG, "UnSubscribing to IoT on topic : " + topic);
+                mIotMqttManager.unsubscribeTopic(topic);
+            } catch(Exception e){
+                Log.e(TAG, "Unsubscribe error.", e);
+            }
         }
     }
 
@@ -902,4 +950,76 @@ public class AmazonFreeRTOSManager {
         processBleCommandQueue();
     }
 
+    /**
+     * Sends a ListNetworkReq command to the connected BLE device. The available WiFi networks found
+     * by the connected BLE device will be returned in the callback as a ListNetworkResp. Each found
+     * WiFi network should trigger the callback once. For example, if there are 10 available networks
+     * found by the BLE device, this callback will be triggered 10 times, each containing one
+     * ListNetworkResp that represents that WiFi network. In addition, the order of the callbacks will
+     * be triggered as follows: the saved networks will be returned first, in decreasing order of their
+     * preference, as denoted by their index. (The smallest non-negative index denotes the highest
+     * preference, and is therefore returned first.) For example, the saved network with index 0 will
+     * be returned first, then the saved network with index 1, then index 2, etc. After all saved
+     * networks have been returned, the non-saved networks will be returned, in the decreasing order
+     * of their RSSI value, a network with higher RSSI value will be returned before one with lower
+     * RSSI value.
+     * @param listNetworkReq The ListNetwork request
+     * @param callback The callback which will be triggered once the BLE device sends a ListNetwork
+     *                 response.
+     */
+    public void listNetworks(ListNetworkReq listNetworkReq, NetworkConfigCallback callback) {
+        mNetworkConfigCallback = callback;
+        Gson gson = new Gson();
+        final String listNetworkReqStr = gson.toJson(listNetworkReq);
+        sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                UUID_LIST_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, listNetworkReqStr));
+    }
+
+    /**
+     * Sends a SaveNetworkReq command to the connected BLE device. The SaveNetworkReq contains the
+     * network credential. A SaveNetworkResp will be sent by the BLE device and triggers the callback.
+     * To get the updated order of all networks, call listNetworks again.
+     * @param saveNetworkReq The SaveNetwork request.
+     * @param callback The callback that is triggered once the BLE device sends a SaveNetwork response.
+     */
+    public void saveNetwork(SaveNetworkReq saveNetworkReq, NetworkConfigCallback callback) {
+        mNetworkConfigCallback = callback;
+        Gson gson = new Gson();
+        final String saveNetworkReqStr = gson.toJson(saveNetworkReq);
+        sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                UUID_SAVE_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, saveNetworkReqStr));
+    }
+
+    /**
+     * Sends an EditNetworkReq command to the connected BLE device. The EditNetwork request is used
+     * to update the preference of a saved network. It contains the current index of the saved network
+     * to be updated, and the desired new index of the save network to be updated to. Both the current
+     * index and the new index must be one of those saved networks. Behavior is undefined if an index
+     * of an unsaved network is provided in the EditNetworkReq.
+     * To get the updated order of all networks, call listNetworks again.
+     * @param editNetworkReq The EditNetwork request.
+     * @param callback The callback that is triggered once the BLE device sends an EditNetwork response.
+     */
+    public void editNetwork(EditNetworkReq editNetworkReq, NetworkConfigCallback callback) {
+        mNetworkConfigCallback = callback;
+        Gson gson = new Gson();
+        final String editNetworkReqStr = gson.toJson(editNetworkReq);
+        sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                UUID_EDIT_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, editNetworkReqStr));
+    }
+
+    /**
+     * Sends a DeleteNetworkReq command to the connected BLE device. The saved network with the index
+     * specified in the delete network request will be deleted, making it a non-saved network again.
+     * To get the updated order of all networks, call listNetworks again.
+     * @param deleteNetworkReq The DeleteNetwork request.
+     * @param callback The callback that is triggered once the BLE device sends a DeleteNetwork response.
+     */
+    public void deleteNetwork(DeleteNetworkReq deleteNetworkReq, NetworkConfigCallback callback) {
+        mNetworkConfigCallback = callback;
+        Gson gson = new Gson();
+        final String deleteNetworkReqStr = gson.toJson(deleteNetworkReq);
+        sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                UUID_DELETE_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, deleteNetworkReqStr));
+    }
 }

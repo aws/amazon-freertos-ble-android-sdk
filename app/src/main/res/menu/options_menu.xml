@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/set_mtu_menu_id"
+        android:title="@string/set_mtu_menu_text" />
+
+    <item
+        android:id="@+id/wifi_provisioning_menu_id"
+        android:title="@string/wifi_provisioning_menu_text" />
+
+    <item
+        android:id="@+id/mqtt_proxy_menu_id"
+        android:title="@string/mqtt_proxy_menu_text" />
+
+</menu>

@@ -9,7 +9,16 @@ import java.util.Map;
 public class AmazonFreeRTOSConstants {
 
     /**
-     * MQTT proxy state
+     * Network security types.
+     */
+    public static final int NETWORK_SECURITY_TYPE_OPEN = 0;
+    public static final int NETWORK_SECURITY_TYPE_WEP = 1;
+    public static final int NETWORK_SECURITY_TYPE_WPA = 2;
+    public static final int NETWORK_SECURITY_TYPE_WPA2 = 3;
+    public static final int NETWORK_SECURITY_TYPE_NOT_SUPPORTED = 4;
+
+    /**
+     * MQTT proxy state.
      */
     public static final int MQTT_PROXY_CONTROL_OFF = 0;
     public static final int MQTT_PROXY_CONTROL_ON = 1;
@@ -68,6 +77,11 @@ public class AmazonFreeRTOSConstants {
     public static final int BLE_COMMAND_TIMEOUT = 3000; //ms
 
     public static final String UUID_AmazonFreeRTOS = "8a7f1168-48af-4efb-83b5-e679f932ff00";
+    public static final String UUID_NETWORK_SERVICE = "3113a187-4b9f-4f9a-aa83-c614e11bff00";
+    public static final String UUID_LIST_NETWORK_CHARACTERISTIC = "3113a187-4b9f-4f9a-aa83-c614e11bff01";
+    public static final String UUID_SAVE_NETWORK_CHARACTERISTIC = "3113a187-4b9f-4f9a-aa83-c614e11bff02";
+    public static final String UUID_EDIT_NETWORK_CHARACTERISTIC = "3113a187-4b9f-4f9a-aa83-c614e11bff03";
+    public static final String UUID_DELETE_NETWORK_CHARACTERISTIC = "3113a187-4b9f-4f9a-aa83-c614e11bff04";
 
     public static final String UUID_MQTT_PROXY_SERVICE = "a9d7166a-d72e-40a9-a002-48044cc3ff00";
     public static final String UUID_MQTT_PROXY_CONTROL_CHARACTERISTIC = "a9d7166a-d72e-40a9-a002-48044cc3ff01";
@@ -83,6 +97,10 @@ public class AmazonFreeRTOSConstants {
 
     public static final Map<String, String> uuidToName = new HashMap<String, String>() {
         {
+            put(UUID_LIST_NETWORK_CHARACTERISTIC, "LIST_NETWORK");
+            put(UUID_EDIT_NETWORK_CHARACTERISTIC, "EDIT_NETWORK");
+            put(UUID_SAVE_NETWORK_CHARACTERISTIC, "SAVE_NETWORK");
+            put(UUID_DELETE_NETWORK_CHARACTERISTIC, "DELETE_NETWORK");
             put(UUID_MQTT_PROXY_CONTROL_CHARACTERISTIC, "MQTT_CONTROL");
             put(UUID_MQTT_PROXY_TX_CHARACTERISTIC, "MQTT_TX");
             put(UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC, "MQTT_TXLARGE");
