@@ -1,4 +1,4 @@
-# Amazon FreeRTOS BLE Mobile SDK for Android: Demo Application
+# Amazon FreeRTOS BLE Mobile SDK for Android
 
 ## Introduction
 
