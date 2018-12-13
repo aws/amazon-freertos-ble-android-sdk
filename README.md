@@ -1,120 +1,26 @@
-# Amazon FreeRTOS BLE Mobile SDK for Android
-
-## License
-
-This library is licensed under the Apache 2.0 License. 
+# Amazon FreeRTOS BLE Mobile SDK for Android: Demo Application
 
 ## Introduction
 
-This SDK is used to communicate with the Amazon FreeRTOS Bluetooth Devices. It has the following functionality:
+Using the Android SDK for Amazon FreeRTOS Bluetooth Devices, you can create mobile applications that do the following:
 
-1. Scan and connect to a nearby BLE device running with Amazon FreeRTOS.
-2. Act as a proxy for transmitting MQTT messages between device running with Amazon FreeRTOS and AWS IoT.
+- Scan for and connect to nearby BLE devices running Amazon FreeRTOS
 
-## System requirement
+- Act as a proxy for transmitting MQTT messages between a device running Amazon FreeRTOS and the AWS IoT cloud
 
-Android 8.0 (API level 26) or higher.
+## System requirements
 
-## Setting up
+- Android 8.0 (API level 26) or higher
 
-To connect to AWS IoT via MQTT, Cognito setup is required. Amazon Cognito provides authentication, authorization, and user management for your web and mobile apps. It allows the end user of the app to access the your AWS services such AWS IoT. (https://docs.aws.amazon.com/iot/latest/developerguide/protocols.html#mqtt-ws).
+- Android Studio
 
-**Step 1 - Create AWS IoT Policy**
+## Setting Up the SDK
 
-AWS IoT policies are used to authorize your device to perform AWS IoT operations, such as subscribing or publishing to MQTT topics.
-If your are using the AWS Console, a step by step guide can be found here (https://docs.aws.amazon.com/iot/latest/developerguide/create-iot-policy.html).
+**To install the Android SDK for Amazon FreeRTOS Bluetooth Devices**
 
-> When adding the statements, switch to advanced mode, and paste in the sample policy JSON.
-> Because we are using Cognito and not a device certificate, we don't need to attach the policy to device certificate, instead, we attach it to a Cognito identity using the AttachPrincipalPolicy API.
+1. Import [amazonfreertossdk](amazonfreertossdk) into your app project in Android Studio.
 
-If your using the AWS API or SDK, please use the CreatePolicy API (https://docs.aws.amazon.com/iot/latest/apireference/API_CreatePolicy.html).
-
-> policyDocument would be the sample policy JSON.
-
-```
-{
-    "Version": "2012-10-17",
-    "Statement": [
-    {
-        "Effect": "Allow",
-        "Action": [
-        "iot:Connect",
-        "iot:Publish",
-        "iot:Subscribe",
-        "iot:Receive",
-        "iot:GetThingShadow",
-        "iot:UpdateThingShadow",
-        "iot:DeleteThingShadow"
-        ],
-        "Resource": [
-        "arn:aws:iot:us-east-1:123456789012:topicfilter/userid/deviceid/*"
-        ]
-    }
-    ]
-}
-```
-**Step 2 - Create Federated Identity Pool**
-
-Create an identity pool that can be attached to the IoT Policy, Create an authenticated role (or unauthenticated role if needed, step 3 of the guide) and add the policies below. A step by step guide can be found here (https://docs.aws.amazon.com/cognito/latest/developerguide/getting-started-with-identity-pools.html).
-
-**Step 3 - Create Cognito IAM Role Permissions Policies**
-
-IAM > Roles > Cognito auth (or unauthenticated if supported) role > Permissions > Permissions policies. We need to additionally allow AttachPrincipalPolicy so that we can attach the Cognito Identity to the AWS IoT Policy.
-
-
-```
-{
-    "Version": "2012-10-17",
-    "Statement": [
-    {
-        "Effect": "Allow",
-        "Action": [
-        "iot:AttachPrincipalPolicy",
-        "iot:Connect",
-        "iot:Publish",
-        "iot:Subscribe",
-        "iot:Receive",
-        "iot:GetThingShadow",
-        "iot:UpdateThingShadow",
-        "iot:DeleteThingShadow"
-        ],
-        "Resource": [
-        "*"
-        ]
-    }
-    ]
-}
-```
-
-## SDK
-The API documentation can be found under _**documentation**_ folder.
-
-The SDK provides following functionality:
-- **BLE helper**: These are ble helper methods for you to perform ble operations with the Amazon FreeRTOS Devices.
-```
-startScanBleDevices(final BleScanResultCallback scanResultCallback)
-stopScanBleDevices()
-connectToDevice(final BluetoothDevice bluetoothDevice, final BleConnectionStatusCallback connectionStatusCallback)
-discoverServices()
-close()
-```
-- **Device info service**: This service provides basic device related info.
-```
-setMtu(int mtu)
-getMtu(DeviceInfoCallback callback)
-getBrokerEndpoint(DeviceInfoCallback callback)
-getDeviceVersion(DeviceInfoCallback callback)
-```
-- **MQTT proxy service**: This service provides control for the MQTT proxy.
-```
-enableMqttProxy(final boolean enable)
-disconnectFromIot()
-```
-
-## Usage
-
-Import _**amazonfreertossdk**_ into your app project in Android studio.
-In your app gradle file, add following into dependencies:
+2. In your app's `gradle` file, add the following dependencies:
 
 ```
 dependencies {
@@ -122,7 +28,7 @@ dependencies {
 }
 ```
 
-In your app AndroidManifest.xml file, add following permissions:
+3. In your app's `AndroidManifest.xml` file, add following permissions:
 
 ```
 <uses-permission android:name="android.permission.BLUETOOTH"/>
@@ -136,34 +42,48 @@ In your app AndroidManifest.xml file, add following permissions:
 <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 ```
 
+## Contents
 
-## Sample App
-There is a sample app under the folder _**app**_ to show how to use the Amazon FreeRTOS BLE Mobile SDK for Android. The sample app demostrates how to connect to a BLE enabled AmazonFreeRTOS device and act as a proxy for MQTT messages between the device and AWS IoT.
+All main functions are defined in [AmazonFreeRTOSManager.java](amazonfreertossdk/src/main/java/com/amazon/aws/amazonfreertossdk/AmazonFreeRTOSManager.java). These functions include:
 
-The sample app consists of two activities. _**AuthenticatorActivity**_ is a sign-in page, which shows an example of how to authenticate app users. _**MainActivity**_ shows how to scan for AmazonFreeRTOS device and enable the MQTT proxy.
+### BLE Helper Functions
 
-Before building the app,
-1. In AuthenticatorActivity.java, replace the following variables: AWS_IOT_POLICY_NAME, AWS_IOT_REGION, COGNITO_POOL_ID, COGNITO_REGION.
-2. In MainActivity.java, replace the following variables: BLE_DEVICE_MAC_ADDR, BLE_DEVICE_NAME, MTU.
-3. In res/raw/awsconfiguration.json, replace your Cognito Identity Pool Id and User Pool Id.
+The SDK includes some functions that help you perform BLE operations with Amazon FreeRTOS devices:
 
-You may either build and install the sample using command line or using Android Studio after enabling "USB debugging" on your Android device. To use command line:
 ```
-./gradlew installDebug
+startScanBleDevices(final BleScanResultCallback scanResultCallback)
+stopScanBleDevices()
+connectToDevice(final BluetoothDevice bluetoothDevice, final BleConnectionStatusCallback connectionStatusCallback)
+discoverServices()
+close()
 ```
 
-The sample app only connects to the BLE device if its MAC address or device name matches the one defined as in _**BLE_DEVICE_MAC_ADDR**_ and _**BLE_DEVICE_NAME**_ .
+### Device Information Service 
 
-In the MainActivity, there are 5 steps, each represented by either a button or switch.
+The device information service provides basic device-related information. Its functions include:
 
-**[Step 1] Scan**: Click this button to start scanning for nearby AmazonFreeRTOS devices. If it finds a matching device, the [Step 2] switch should be enabled. The length of the scan period is defined in the Amazon FreeRTOS BLE Mobile SDK for Android.
+```
+setMtu(int mtu)
+getMtu(DeviceInfoCallback callback)
+getBrokerEndpoint(DeviceInfoCallback callback)
+getDeviceVersion(DeviceInfoCallback callback)
+```
 
-**[Step 2] Connect**: Toggle this switch to connect to the found device. If the connection is successful, the buttons and switches for the remaining steps should be enabled.
+### MQTT Proxy Service 
 
-**[Step 3] Discover**: Click this button to discover all the services and characteristics supported on the found device.
+The MQTT proxy service controls the MQTT proxy. Its functions include:
+```
+enableMqttProxy(final boolean enable)
+disconnectFromIot()
+```
 
-**[Step 4] Set MTU**: Click this button to set the desired MTU between the device and the app. Note that the actual MTU value is limited by the maximum supported MTU value on the AmazonFreeRTOS device and the Android device.
+You can find the documentation for these functions in [documentation](documentation).
 
-**[Step 5] Mqtt proxy**: Toggle this switch to enable/disable MQTT proxy. If enabled, the app should now behave as a proxy for MQTT messages transmitted between the AmazonFreeRTOS device and AWS IoT.
 
-**Sign out**: Click this button to sign out of the app. User will then need to sign in again on the Sign-in page.
+## Demo Application
+
+The SDK includes a demo application that demonstrates some of the main features of the SDK. You can find the demo in [app](app).
+
+## License
+
+This library is licensed under the Apache 2.0 License. 
