@@ -8,44 +8,25 @@ For information about configuring and using the demo application, see [Amazon Fr
 
 ## Usage
 
-After you configure the demo app, you can build and install the demo. To build the app from the command line, use the following command:
+1. Replace the constants in DemoConstants.java and res/raw/awsconfiguration.json.
+2. After you configure the demo app, you can build and install the demo. To build the app from the command line, use the following command:
 
-```
-./gradlew installDebug
-```
+    ```
+    ./gradlew installDebug
+    ```
 
-You can also build the app in Android Studio, after enabling "USB debugging" on your Android device.
+    You can also build the app in Android Studio, after enabling "USB debugging" on your Android device.
+  
+3. Start the demo app. Click on the "Scan" button to scan for nearby BLE devices.
+4. Toggle the switch to connect to one of them.
+5. Click on "More..." menu to set MTU.
+6. Click on "More..." menu again to do WiFi provisioning or to enable MQTT Proxy.
 
 **Note** 
 
-The demo app only connects to the BLE device if its MAC address or device name matches the one defined as in _**BLE_DEVICE_MAC_ADDR**_ and _**BLE_DEVICE_NAME**_ .
-
-[MainActivity](app/src/main/java/com/amazon/aws/freertosandroid/MainActivity.java) defines the following buttons and switches for the application:
-
-**Scan**
-
-Press this button to start scanning for nearby Amazon FreeRTOS devices. If the app finds a matching device, the **Connect** switch is enabled.
-
-**Connect**
-
-Toggle this switch to connect to the found device. If the connection is successful, **Discover**, **Set MTU**, **MQTT proxy**, and **Sign out** are enabled.
-
-**Discover**
-
-Press this button to discover all the services and characteristics supported on the found device.
-
-**Set MTU**
-
-Press this button to set the desired MTU between the device and the app. Note that the actual MTU value is limited by the maximum supported MTU value on the Amazon FreeRTOS device and the Android device.
-
-**MQTT proxy**
-
-Toggle this switch to enable/disable MQTT proxy. If enabled, the app behaves as a proxy for MQTT messages transmitted between the Amazon FreeRTOS device and AWS IoT.
-
-**Sign out**
-
-Press this button to sign out of the app. Users can sign in again on the Sign-in page.
-
+1. Once the app is connected to a BLE device, make sure you first click "Set MTU" in the "More..." menu before doing MQTT proxy or WiFi Provisoning. MTU size is configured in DemoConstants.java.
+2. For WiFi provisioning, make sure you wait for the app to finish refreshing after each list/save/edit/delete operation.
+3. The current MTU size shows "N/A". This is a limitation of the current version of the app.
 
 ## License
 
