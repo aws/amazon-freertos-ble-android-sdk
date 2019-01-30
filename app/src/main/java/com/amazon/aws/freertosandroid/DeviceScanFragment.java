@@ -118,8 +118,13 @@ public class DeviceScanFragment extends Fragment {
             public void onBleConnectionStatusChanged(AmazonFreeRTOSConstants.BleConnectionState connectionStatus) {
                 Log.i(TAG, "BLE connection status changed to: " + connectionStatus);
                 if (connectionStatus == AmazonFreeRTOSConstants.BleConnectionState.BLE_CONNECTED) {
-                    mMenuTextView.setEnabled(true);
-                    mMenuTextView.setTextColor(getResources().getColor(R.color.colorAccent, null));
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mMenuTextView.setEnabled(true);
+                            mMenuTextView.setTextColor(getResources().getColor(R.color.colorAccent, null));
+                        }
+                    });
                     mAmazonFreeRTOSManager.discoverServices();
                 } else if (connectionStatus == AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED) {
                     resetUI();
