@@ -2,13 +2,11 @@ package com.amazon.aws.freertosandroid;
 
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.os.ParcelUuid;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -32,11 +30,7 @@ import com.amazon.aws.amazonfreertossdk.BleScanResultCallback;
 import com.amazonaws.mobile.auth.core.IdentityManager;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
-
-import static com.amazon.aws.freertosandroid.DemoConstants.UUID_AmazonFreeRTOS;
 
 public class DeviceScanFragment extends Fragment {
     private static final String TAG = "DeviceScanFragment";
@@ -104,9 +98,9 @@ public class DeviceScanFragment extends Fragment {
                                     startActivity(intentToStartWifiProvision);
                                     return true;
                                 case R.id.mqtt_proxy_menu_id:
-                                    Intent intentToStartMqttProxy
-                                            = MqttProxyActivity.newIntent(getActivity());
-                                    startActivity(intentToStartMqttProxy);
+                                    Intent intentToStartAuthenticator
+                                            = AuthenticatorActivity.newIntent(getActivity());
+                                    startActivity(intentToStartAuthenticator);
                                     return true;
                             }
                             return false;
@@ -190,10 +184,7 @@ public class DeviceScanFragment extends Fragment {
 
         //Getting AmazonFreeRTOSManager
         mAmazonFreeRTOSManager = AmazonFreeRTOSAgent.getAmazonFreeRTOSManager(getActivity());
-        List<ScanFilter> scanFilters = Arrays.asList(
-                new ScanFilter.Builder().setServiceUuid(
-                        new ParcelUuid(UUID.fromString(UUID_AmazonFreeRTOS))).build());
-        mAmazonFreeRTOSManager.setScanFilters(scanFilters);
+
         scanButton = (Button)view.findViewById(R.id.scanbutton);
         scanButton.setOnClickListener(new View.OnClickListener() {
             @Override

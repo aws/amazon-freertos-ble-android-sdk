@@ -5,8 +5,6 @@ import android.bluetooth.BluetoothManager;
 import android.content.Context;
 
 import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSManager;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.mobile.client.AWSMobileClient;
 
 /**
  * A wrapper class to get the instance of AmazonFreeRTOSManager.
@@ -28,11 +26,7 @@ public class AmazonFreeRTOSAgent {
             BluetoothManager bluetoothManager
                     = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
             sBluetoothAdapter = bluetoothManager.getAdapter();
-            AWSCredentialsProvider credentialsProvider =
-                    AWSMobileClient.getInstance().getCredentialsProvider();
-
-            sAmazonFreeRTOSManager = new AmazonFreeRTOSManager(context,
-                    sBluetoothAdapter, credentialsProvider);
+            sAmazonFreeRTOSManager = new AmazonFreeRTOSManager(context, sBluetoothAdapter);
         }
         return sAmazonFreeRTOSManager;
     }

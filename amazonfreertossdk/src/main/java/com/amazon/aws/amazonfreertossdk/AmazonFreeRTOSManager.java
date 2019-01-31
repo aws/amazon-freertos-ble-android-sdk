@@ -16,8 +16,11 @@ import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.ParcelUuid;
+
+import java.util.Arrays;
 import java.util.Base64;
+
+import android.os.ParcelUuid;
 import android.util.Log;
 
 import com.amazon.aws.amazonfreertossdk.BleCommand.CommandType;
@@ -52,7 +55,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -80,7 +82,9 @@ public class AmazonFreeRTOSManager {
     private BluetoothGatt mBluetoothGatt;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
-    private List<ScanFilter> mScanFilters;
+    private List<ScanFilter> mScanFilters = Arrays.asList(
+            new ScanFilter.Builder().setServiceUuid(
+                    new ParcelUuid(UUID.fromString(UUID_AmazonFreeRTOS))).build());
 
     private BleScanResultCallback mBleScanResultCallback;
     private BleConnectionStatusCallback mBleConnectionStatusCallback;
@@ -109,26 +113,30 @@ public class AmazonFreeRTOSManager {
      * @param context The app context. Should be passed in by the app that creates a new instance
      *                of AmazonFreeRTOSManager.
      * @param bluetoothAdapter BluetoothAdaptor passed in by the app.
-     * @param credentialsProvider AWS credential for connection to AWS IoT. If null is passed in,
-     *                            then it will not be able to do MQTT proxy over BLE as it cannot
-     *                            connect to AWS IoT.
      */
-    public AmazonFreeRTOSManager(Context context, BluetoothAdapter bluetoothAdapter,
-                                 AWSCredentialsProvider credentialsProvider) {
+    public AmazonFreeRTOSManager(Context context, BluetoothAdapter bluetoothAdapter) {
         mContext = context;
         mBluetoothAdapter = bluetoothAdapter;
-        mCredentialProvider = credentialsProvider;
         mHandlerThread = new HandlerThread("BleCommandHandler");
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper());
     }
 
     /**
-     * Setting the criteria for which exact the BLE devices to scan for.
+     * Setting the criteria for which exact the BLE devices to scan for. This overrides the default
+     * mScanFilters which is by default set to scan for UUID_AmazonFreeRTOS.
      * @param filters The list of ScanFilter for BLE devices.
      */
     public void setScanFilters(List<ScanFilter> filters) {
         mScanFilters = filters;
+    }
+
+    /**
+     * Setting the AWS Credential used for connecting to AWS IoT.
+     * @param provider AWSCredentialProvider.
+     */
+    public void setCredentialProvider(AWSCredentialsProvider provider) {
+        mCredentialProvider = provider;
     }
 
     /**

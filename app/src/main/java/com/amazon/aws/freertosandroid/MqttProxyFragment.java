@@ -11,6 +11,8 @@ import android.widget.CompoundButton;
 import android.widget.Switch;
 
 import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSManager;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.mobile.client.AWSMobileClient;
 
 public class MqttProxyFragment extends Fragment {
 
@@ -27,6 +29,9 @@ public class MqttProxyFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mAmazonFreeRTOSManager = AmazonFreeRTOSAgent.getAmazonFreeRTOSManager(getActivity());
+        AWSCredentialsProvider credentialsProvider =
+                AWSMobileClient.getInstance().getCredentialsProvider();
+        mAmazonFreeRTOSManager.setCredentialProvider(credentialsProvider);
     }
 
     @Nullable

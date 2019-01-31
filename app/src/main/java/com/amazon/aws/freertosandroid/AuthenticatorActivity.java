@@ -1,5 +1,7 @@
 package com.amazon.aws.freertosandroid;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -20,6 +22,11 @@ public class AuthenticatorActivity extends AppCompatActivity {
 
 
     private final static String TAG = "AuthenticatorActivity";
+
+    public static Intent newIntent(Context packageContext) {
+        Intent intent = new Intent(packageContext, AuthenticatorActivity.class);
+        return intent;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,6 +88,6 @@ public class AuthenticatorActivity extends AppCompatActivity {
 
         SignInUI signin = (SignInUI) AWSMobileClient.getInstance()
                 .getClient(AuthenticatorActivity.this, SignInUI.class);
-        signin.login(AuthenticatorActivity.this, DeviceScanActivity.class).execute();
+        signin.login(AuthenticatorActivity.this, MqttProxyActivity.class).execute();
     }
 }
