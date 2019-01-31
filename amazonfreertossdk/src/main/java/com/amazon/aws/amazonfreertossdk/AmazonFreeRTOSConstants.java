@@ -76,7 +76,6 @@ public class AmazonFreeRTOSConstants {
      */
     public static final int BLE_COMMAND_TIMEOUT = 3000; //ms
 
-    public static final String UUID_AmazonFreeRTOS = "8a7f1168-48af-4efb-83b5-e679f932ff00";
     public static final String UUID_NETWORK_SERVICE = "3113a187-4b9f-4f9a-aa83-c614e11bff00";
     public static final String UUID_LIST_NETWORK_CHARACTERISTIC = "3113a187-4b9f-4f9a-aa83-c614e11bff01";
     public static final String UUID_SAVE_NETWORK_CHARACTERISTIC = "3113a187-4b9f-4f9a-aa83-c614e11bff02";

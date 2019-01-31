@@ -28,4 +28,9 @@ public class DemoConstants {
      * Please refer to API documentation for AmazonFreeRTOSManager.class#setMtu.
      */
     static final int MTU = 512;
+
+    /*
+     * Replace with the UUID that is being advertised from the device to be connected.
+     */
+    static final String UUID_AmazonFreeRTOS = "8a7f1168-48af-4efb-83b5-e679f932ff00";
 }

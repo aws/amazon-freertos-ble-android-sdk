@@ -80,6 +80,7 @@ public class AmazonFreeRTOSManager {
     private BluetoothGatt mBluetoothGatt;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
+    private List<ScanFilter> mScanFilters;
 
     private BleScanResultCallback mBleScanResultCallback;
     private BleConnectionStatusCallback mBleConnectionStatusCallback;
@@ -120,6 +121,14 @@ public class AmazonFreeRTOSManager {
         mHandlerThread = new HandlerThread("BleCommandHandler");
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper());
+    }
+
+    /**
+     * Setting the criteria for which exact the BLE devices to scan for.
+     * @param filters The list of ScanFilter for BLE devices.
+     */
+    public void setScanFilters(List<ScanFilter> filters) {
+        mScanFilters = filters;
     }
 
     /**
@@ -164,11 +173,9 @@ public class AmazonFreeRTOSManager {
         }, SCAN_PERIOD);
         Log.i(TAG, "Starting ble device scan");
         mScanning = true;
-        List<ScanFilter> scanFilters = Arrays.asList(
-                new ScanFilter.Builder().setServiceUuid(
-                        new ParcelUuid(UUID.fromString(UUID_AmazonFreeRTOS))).build());
+
         ScanSettings scanSettings = new ScanSettings.Builder().build();
-        mBluetoothLeScanner.startScan(scanFilters, scanSettings, mScanCallback);
+        mBluetoothLeScanner.startScan(mScanFilters, scanSettings, mScanCallback);
     }
 
     /**
