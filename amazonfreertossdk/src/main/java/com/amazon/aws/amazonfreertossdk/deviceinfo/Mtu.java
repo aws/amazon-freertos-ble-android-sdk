@@ -6,5 +6,5 @@ package com.amazon.aws.amazonfreertossdk.deviceinfo;
  * is returned in the response.
  */
 public class Mtu {
-    public int mtu;
+    public String mtu;
 }

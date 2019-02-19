@@ -77,7 +77,7 @@ public class WifiProvisionFragment extends Fragment {
             mWifiInfo = wifiInfo;
             mSsidTextView.setText(mWifiInfo.getSsid());
             mRssiTextView.setText(getResources().getString(R.string.rssi_value, mWifiInfo.getRssi()));
-            mBssidTextView.setText(mWifiInfo.getBssid());
+            mBssidTextView.setText(bssidToString(mWifiInfo.getBssid()));
             mNetworkTypeTextView.setText(mWifiInfo.getNetworkTypeName());
             if (SAVED_NETWORK_RSSI == mWifiInfo.getRssi()) {
                 int colorAccent = getResources().getColor(R.color.colorAccent, null);
@@ -99,7 +99,7 @@ public class WifiProvisionFragment extends Fragment {
         public void onClick(View v) {
             FragmentManager manager = getFragmentManager();
             WifiCredentialFragment dialog = WifiCredentialFragment.newInstance(
-                    mWifiInfo.getSsid(), mWifiInfo.getBssid());
+                    mWifiInfo.getSsid(), bssidToString(mWifiInfo.getBssid()));
             dialog.setTargetFragment(mHostingFragment, REQUEST_CODE);
             dialog.show(manager, DIALOG_TAG);
         }
@@ -272,7 +272,7 @@ public class WifiProvisionFragment extends Fragment {
                             response.getRssi(), response.getSecurity(), response.getIndex(),
                             response.getConnected());
                     mWifiInfoList.add(wifiInfo);
-                    mBssid2WifiInfoMap.put(wifiInfo.getBssid(), wifiInfo);
+                    mBssid2WifiInfoMap.put(bssidToString(wifiInfo.getBssid()), wifiInfo);
                     mWifiInfoAdapter.notifyDataSetChanged();
                 }
             });
@@ -345,5 +345,15 @@ public class WifiProvisionFragment extends Fragment {
         editNetworkReq.index = oldIndex;
         editNetworkReq.newIndex = newIndex;
         mAmazonFreeRTOSManager.editNetwork(editNetworkReq, mNetworkConfigCallback);
+    }
+
+    private String bssidToString(byte[] bssid) {
+        StringBuilder sb = new StringBuilder(18);
+        for (byte b : bssid) {
+            if (sb.length() > 0)
+                sb.append(':');
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
 }

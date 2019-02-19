@@ -24,8 +24,6 @@ android {
 
 dependencies {
     implementation 'com.google.code.gson:gson:2.8.5'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.7.4'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.9.7'
     implementation 'co.nstant.in:cbor:0.8'
     implementation ('com.amazonaws:aws-android-sdk-iot:2.7.+')
 

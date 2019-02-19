@@ -8,7 +8,7 @@ import lombok.Setter;
 public class WifiInfo {
     private static String[] NETWORK_TYPES = {"Open", "WEP", "WPA", "WPA2", "Other"};
     private String ssid;
-    private String bssid;
+    private byte[] bssid;
     private int rssi;
     private int networkType;
     private int index;
@@ -18,7 +18,7 @@ public class WifiInfo {
         return NETWORK_TYPES[networkType];
     }
 
-    public WifiInfo(String ssid, String bssid, int rssi, int networkType, int index, boolean connected) {
+    public WifiInfo(String ssid, byte[] bssid, int rssi, int networkType, int index, boolean connected) {
         this.ssid = ssid;
         this.bssid = bssid;
         this.rssi = rssi;

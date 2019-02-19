@@ -31,7 +31,7 @@ public class BleCommand {
     /**
      * The data to be sent with the BLE command.
      */
-    private String data;
+    private byte[] data;
 
     /**
      * Construct a BLE command with data.
@@ -40,7 +40,7 @@ public class BleCommand {
      * @param sUuid the service uuid.
      * @param d the data to be sent with the BLE command.
      */
-    public BleCommand(CommandType t, String cUuid, String sUuid, String d) {
+    public BleCommand(CommandType t, String cUuid, String sUuid, byte[] d) {
         type = t;
         characteristicUuid = cUuid;
         serviceUuid = sUuid;

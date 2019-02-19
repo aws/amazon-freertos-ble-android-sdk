@@ -17,9 +17,9 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.HandlerThread;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
-import java.util.Base64;
-
 import android.os.ParcelUuid;
 import android.util.Log;
 
@@ -51,10 +51,9 @@ import com.amazonaws.mobileconnectors.iot.AWSIotMqttManager;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttMessageDeliveryCallback;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttNewMessageCallback;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttQos;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Formatter;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -104,8 +103,10 @@ public class AmazonFreeRTOSManager {
     private int mMaxPayloadLen = 0;
     //For large object transfers
     private int mMtu = 0;
-    private StringBuilder mTxLargeObject = new StringBuilder();
-    private StringBuilder mRxLargeObject = new StringBuilder();
+    //Buffer for receiving messages from device
+    private ByteArrayOutputStream mTxLargeObject = new ByteArrayOutputStream();
+    //Buffer for sending messages to device.
+    private byte[] mRxLargeObject;
     private int mTotalPackets = 0;
     private int mPacketCount = 1;
     /**
@@ -115,8 +116,23 @@ public class AmazonFreeRTOSManager {
      * @param bluetoothAdapter BluetoothAdaptor passed in by the app.
      */
     public AmazonFreeRTOSManager(Context context, BluetoothAdapter bluetoothAdapter) {
+        this(context, bluetoothAdapter, null);
+    }
+
+    /**
+     * Construct an AmazonFreeRTOSManager instance.
+     * @param context The app context. Should be passed in by the app that creates a new instance
+     *                of AmazonFreeRTOSManager.
+     * @param bluetoothAdapter BluetoothAdaptor passed in by the app.
+     * @param credentialsProvider AWS credential for connection to AWS IoT. If null is passed in,
+     *                            then it will not be able to do MQTT proxy over BLE as it cannot
+     *                            connect to AWS IoT.
+     */
+    public AmazonFreeRTOSManager(Context context, BluetoothAdapter bluetoothAdapter,
+                                 AWSCredentialsProvider credentialsProvider) {
         mContext = context;
         mBluetoothAdapter = bluetoothAdapter;
+        mCredentialProvider = credentialsProvider;
         mHandlerThread = new HandlerThread("BleCommandHandler");
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper());
@@ -337,11 +353,12 @@ public class AmazonFreeRTOSManager {
 
         MqttProxyControl mqttProxyControl = new MqttProxyControl();
         mqttProxyControl.proxyState = enable ? MQTT_PROXY_CONTROL_ON : MQTT_PROXY_CONTROL_OFF;
-        Gson gson = new Gson();
-        final String mqttProxyControlStr = gson.toJson(mqttProxyControl);
-        sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
-                UUID_MQTT_PROXY_CONTROL_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE,
-                mqttProxyControlStr));
+        byte[] mqttProxyControlBytes = mqttProxyControl.encode();
+        if (mqttProxyControlBytes != null) {
+            sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                    UUID_MQTT_PROXY_CONTROL_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE,
+                    mqttProxyControlBytes));
+        }
         if (!enable) {
             disconnectFromIot();
         }
@@ -405,34 +422,34 @@ public class AmazonFreeRTOSManager {
             @Override
             public void onCharacteristicChanged(BluetoothGatt gatt,
                                                 BluetoothGattCharacteristic characteristic) {
-                String responseStr = characteristic.getStringValue(0);
+                byte[] responseBytes = characteristic.getValue();
                 Log.d(TAG, "->->-> Characteristic changed for: "
                         + uuidToName.get(characteristic.getUuid().toString())
-                        + " with data: " + responseStr);
+                        + " with data: " + bytesToHexString(responseBytes));
 
-                Gson gson = new Gson();
                 switch (characteristic.getUuid().toString()) {
                     case UUID_LIST_NETWORK_CHARACTERISTIC:
-                        ListNetworkResp listNetworkResp = gson.fromJson(responseStr, ListNetworkResp.class);
-                        if (mNetworkConfigCallback != null) {
+                        ListNetworkResp listNetworkResp = new ListNetworkResp();
+                        if (listNetworkResp.decode(responseBytes) && mNetworkConfigCallback != null) {
+                            Log.d(TAG, listNetworkResp.toString());
                             mNetworkConfigCallback.onListNetworkResponse(listNetworkResp);
                         }
                         break;
                     case UUID_SAVE_NETWORK_CHARACTERISTIC:
-                        SaveNetworkResp saveNetworkResp = gson.fromJson(responseStr, SaveNetworkResp.class);
-                        if (mNetworkConfigCallback != null) {
+                        SaveNetworkResp saveNetworkResp = new SaveNetworkResp();
+                        if (saveNetworkResp.decode(responseBytes) && mNetworkConfigCallback != null) {
                             mNetworkConfigCallback.onSaveNetworkResponse(saveNetworkResp);
                         }
                         break;
                     case UUID_EDIT_NETWORK_CHARACTERISTIC:
-                        EditNetworkResp editNetworkResp = gson.fromJson(responseStr, EditNetworkResp.class);
-                        if (mNetworkConfigCallback != null) {
+                        EditNetworkResp editNetworkResp = new EditNetworkResp();
+                        if (editNetworkResp.decode(responseBytes) && mNetworkConfigCallback != null) {
                             mNetworkConfigCallback.onEditNetworkResponse(editNetworkResp);
                         }
                         break;
                     case UUID_DELETE_NETWORK_CHARACTERISTIC:
-                        DeleteNetworkResp deleteNetworkResp = gson.fromJson(responseStr, DeleteNetworkResp.class);
-                        if (mNetworkConfigCallback != null) {
+                        DeleteNetworkResp deleteNetworkResp = new DeleteNetworkResp();
+                        if (deleteNetworkResp.decode(responseBytes) && mNetworkConfigCallback != null) {
                             mNetworkConfigCallback.onDeleteNetworkResponse(deleteNetworkResp);
                         }
                         break;
@@ -441,12 +458,16 @@ public class AmazonFreeRTOSManager {
                                 + characteristic.getStringValue(0));
                         break;
                     case UUID_MQTT_PROXY_TX_CHARACTERISTIC:
-                        handleMqttTxMessage(responseStr);
+                        handleMqttTxMessage(responseBytes);
                         break;
                     case UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC:
-                        mTxLargeObject = mTxLargeObject.append(responseStr);
-                        sendBleCommand(new BleCommand(READ_CHARACTERISTIC,
-                                UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE));
+                        try {
+                            mTxLargeObject.write(responseBytes);
+                            sendBleCommand(new BleCommand(READ_CHARACTERISTIC,
+                                    UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE));
+                        } catch (IOException e) {
+                            Log.e(TAG, "Failed to concatenate byte array.", e);
+                        }
                         break;
                     default:
                         Log.e(TAG, "Unknown characteristic " + characteristic.getUuid());
@@ -479,32 +500,42 @@ public class AmazonFreeRTOSManager {
                                              int status) {
                 Log.d(TAG, "->->-> onCharacteristicRead status: " + (status == 0 ? "Success" : status));
                 if (status == BluetoothGatt.GATT_SUCCESS) {
-                    String responseStr = characteristic.getStringValue(0);
-                    Log.d(TAG, "    with data: " + responseStr);
-                    Gson gson = new Gson();
+                    byte[] responseBytes = characteristic.getValue();
                     switch (characteristic.getUuid().toString()) {
                         case UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC:
-                            mTxLargeObject = mTxLargeObject.append(responseStr);
-                            if (responseStr.length() < mMaxPayloadLen) {
-                                Log.d(TAG, "This is the last packet in this large object transfer.");
-                                handleMqttTxMessage(mTxLargeObject.toString());
-                                mTxLargeObject.setLength(0); //reset the string.
-                            } else {
-                                sendBleCommand(new BleCommand(READ_CHARACTERISTIC,
-                                    UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE));
+                            try {
+                                mTxLargeObject.write(responseBytes);
+                                if (responseBytes.length < mMaxPayloadLen) {
+                                    byte[] largeMessage = mTxLargeObject.toByteArray();
+                                    Log.d(TAG, "Large object received from device successfully: "
+                                        + bytesToHexString(largeMessage));
+                                    handleMqttTxMessage(largeMessage);
+                                    mTxLargeObject.reset();
+                                } else {
+                                    sendBleCommand(new BleCommand(READ_CHARACTERISTIC,
+                                            UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE));
+                                }
+                            } catch (IOException e) {
+                                Log.e(TAG, "Failed to concatenate byte array.", e);
                             }
                             //broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
                             break;
                         case UUID_DEVICE_MTU_CHARACTERISTIC:
-                            Mtu currentMtu = gson.fromJson(responseStr, Mtu.class);
+                            Mtu currentMtu = new Mtu();
+                            currentMtu.mtu = new String(responseBytes);
                             Log.i(TAG, "Current MTU is set to: " + currentMtu.mtu);
-                            mMtu = currentMtu.mtu;
-                            if (mDeviceInfoCallback != null) {
-                                mDeviceInfoCallback.onObtainMtu(mMtu);
+                            try {
+                                mMtu = Integer.parseInt(currentMtu.mtu);
+                                if (mDeviceInfoCallback != null) {
+                                    mDeviceInfoCallback.onObtainMtu(mMtu);
+                                }
+                            } catch (NumberFormatException e) {
+                                Log.w(TAG, "Cannot parse current MTU value.");
                             }
                             break;
                         case UUID_IOT_ENDPOINT_CHARACTERISTIC:
-                            BrokerEndpoint currentEndpoint = gson.fromJson(responseStr, BrokerEndpoint.class);
+                            BrokerEndpoint currentEndpoint = new BrokerEndpoint();
+                            currentEndpoint.brokerEndpoint = new String(responseBytes);
                             Log.i(TAG, "Current broker endpoint is set to: "
                                     + currentEndpoint.brokerEndpoint);
                             if (mDeviceInfoCallback != null) {
@@ -512,7 +543,8 @@ public class AmazonFreeRTOSManager {
                             }
                             break;
                         case UUID_DEVICE_VERSION_CHARACTERISTIC:
-                            Version currentVersion = gson.fromJson(responseStr, Version.class);
+                            Version currentVersion = new Version();
+                            currentVersion.version = new String(responseBytes);
                             Log.i(TAG, "Ble software version on device is: " + currentVersion.version);
                             if (mDeviceInfoCallback != null) {
                                 mDeviceInfoCallback.onObtainDeviceSoftwareVersion(currentVersion.version);
@@ -534,12 +566,12 @@ public class AmazonFreeRTOSManager {
                         + "; status: " + (status == 0 ? "Success" : status));
                 if (status == BluetoothGatt.GATT_SUCCESS
                     && UUID_MQTT_PROXY_RXLARGE_CHARACTERISTIC.equals(characteristic.getUuid().toString())
-                    && mRxLargeObject.length() > 0) {
-                    String packet = mRxLargeObject.substring(0, Math.min(mRxLargeObject.length(), mMaxPayloadLen));
-                    Log.d(TAG, "Packet #" + (++mPacketCount) + ": " + packet);
+                    && mMaxPayloadLen * mPacketCount <= mRxLargeObject.length) {
+                    byte[] packet = Arrays.copyOfRange(mRxLargeObject, mMaxPayloadLen * mPacketCount,
+                            Math.min(mRxLargeObject.length, mMaxPayloadLen * mPacketCount + mMaxPayloadLen));
+                    Log.d(TAG, "Packet #" + (++mPacketCount) + ": " + bytesToHexString(packet));
                     sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
                             UUID_MQTT_PROXY_RXLARGE_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, packet));
-                    mRxLargeObject.delete(0, Math.min(mRxLargeObject.length(), mMaxPayloadLen));
                 }
                 processNextBleCommand();
             }
@@ -549,19 +581,24 @@ public class AmazonFreeRTOSManager {
      * Handle MQTT related messages received from device.
      * @param message message received from device.
      */
-    private void handleMqttTxMessage(String message) {
-        Gson gson = new Gson();
-        MqttProxyMessage mqttProxyMessage = gson.fromJson(message, MqttProxyMessage.class);
+    private void handleMqttTxMessage(byte[] message) {
+        MqttProxyMessage mqttProxyMessage = new MqttProxyMessage();
+        if (!mqttProxyMessage.decode(message)) {
+            return;
+        }
         Log.i(TAG, "Handling Mqtt Message type : " + mqttProxyMessage.type);
         switch (mqttProxyMessage.type) {
             case MQTT_MSG_CONNECT:
-                final Connect connect = gson.fromJson(message, Connect.class);
-                connectToIoT(connect);
+                final Connect connect = new Connect();
+                if (connect.decode(message)) {
+                    connectToIoT(connect);
+                }
                 break;
             case MQTT_MSG_SUBSCRIBE:
-                final Subscribe subscribe = gson.fromJson(message, Subscribe.class);
-                Log.d(TAG, subscribe.toString());
-                subscribeToIoT(subscribe);
+                final Subscribe subscribe = new Subscribe();
+                if (subscribe.decode(message)) {
+                    Log.d(TAG, subscribe.toString());
+                    subscribeToIoT(subscribe);
                 /*
                   Currently, because the IoT part of aws mobile sdk for Android
                   does not provide suback callback when subscribe is successful,
@@ -570,25 +607,30 @@ public class AmazonFreeRTOSManager {
                   Message is received from the subscribed topic before suback
                   is sent to device.
                  */
-                mHandler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        sendSubAck(subscribe);
-                    }
-                }, 1000);
+                    mHandler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            sendSubAck(subscribe);
+                        }
+                    }, 1000);
+                }
                 break;
             case MQTT_MSG_UNSUBSCRIBE:
-                final Unsubscribe unsubscribe = gson.fromJson(message, Unsubscribe.class);
-                unsubscribeToIoT(unsubscribe);
+                final Unsubscribe unsubscribe = new Unsubscribe();
+                if (unsubscribe.decode(message)) {
+                    unsubscribeToIoT(unsubscribe);
                 /*
                   TODO: add unsuback support in Aws Mobile sdk
                  */
-                sendUnsubAck(unsubscribe);
+                    sendUnsubAck(unsubscribe);
+                }
                 break;
             case MQTT_MSG_PUBLISH:
-                final Publish publish = gson.fromJson(message, Publish.class);
-                mMessageId = publish.getMsgID();
-                publishToIoT(publish);
+                final Publish publish = new Publish();
+                if (publish.decode(message)) {
+                    mMessageId = publish.getMsgID();
+                    publishToIoT(publish);
+                }
                 break;
             case MQTT_MSG_DISCONNECT:
                 disconnectFromIot();
@@ -622,14 +664,15 @@ public class AmazonFreeRTOSManager {
                         mMqttConnectionState = MqttConnectionState.MQTT_Connected;
                         //sending connack
                         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED) {
-                            Gson gson = new Gson();
                             Connack connack = new Connack();
                             connack.type = MQTT_MSG_CONNACK;
                             connack.status = MqttConnectionState.MQTT_Connected.ordinal();
-                            final String connackStr = gson.toJson(connack);
-                            sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                            byte[] connackBytes = connack.encode();
+                            if (connackBytes != null) {
+                                sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
                                     UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE,
-                                    connackStr));
+                                    connackBytes));
+                            }
                         } else {
                             Log.e(TAG, "Cannot send CONACK because BLE connection is: " + mBleConnectionState);
                         }
@@ -656,12 +699,11 @@ public class AmazonFreeRTOSManager {
             return;
         }
 
-        for (int i = 0; i < subscribe.topics.length; i++) {
+        for (int i = 0; i < subscribe.topics.size(); i++) {
             try {
-                byte[] data = Base64.getDecoder().decode(subscribe.topics[i]);
-                String topic = new String(data);
+                String topic = subscribe.topics.get(i);
                 Log.i(TAG, "Subscribing to IoT on topic : " + topic);
-                final int QoS = subscribe.qoSs[i];
+                final int QoS = subscribe.qoSs.get(i);
                 AWSIotMqttQos qos = (QoS == 0 ? AWSIotMqttQos.QOS0 : AWSIotMqttQos.QOS1);
                 mIotMqttManager.subscribeToTopic(topic, qos, new AWSIotMqttNewMessageCallback() {
                     @Override
@@ -671,10 +713,10 @@ public class AmazonFreeRTOSManager {
                             Log.i(TAG, " Message arrived on topic: " + topic + ";  message: " + message);
                             Publish publish = new Publish(
                                     MQTT_MSG_PUBLISH,
-                                    Base64.getEncoder().encodeToString(topic.getBytes()),
+                                    topic,
                                     mMessageId,
                                     QoS,
-                                    Base64.getEncoder().encodeToString(data)
+                                    data
                             );
                             publishToDevice(publish);
                         } catch (UnsupportedEncodingException e) {
@@ -695,14 +737,15 @@ public class AmazonFreeRTOSManager {
             return;
         }
         Log.i(TAG, "Sending SUB ACK back to device.");
-        Gson gson = new Gson();
         Suback suback = new Suback();
         suback.type = MQTT_MSG_SUBACK;
         suback.msgID = subscribe.msgID;
-        suback.status = subscribe.qoSs[0];
-        final String subackStr = gson.toJson(suback);
-        sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
-                UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, subackStr));
+        suback.status = subscribe.qoSs.get(0);
+        byte[] subackBytes = suback.encode();
+        if (subackBytes != null) {
+            sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, subackBytes));
+        }
     }
 
     private void unsubscribeToIoT(final Unsubscribe unsubscribe) {
@@ -711,10 +754,9 @@ public class AmazonFreeRTOSManager {
             return;
         }
 
-        for (int i = 0; i < unsubscribe.topics.length; i++) {
+        for (int i = 0; i < unsubscribe.topics.size(); i++) {
             try {
-                byte[] data = Base64.getDecoder().decode(unsubscribe.topics[i]);
-                String topic = new String(data);
+                String topic = unsubscribe.topics.get(i);
                 Log.i(TAG, "UnSubscribing to IoT on topic : " + topic);
                 mIotMqttManager.unsubscribeTopic(topic);
             } catch(Exception e){
@@ -730,13 +772,14 @@ public class AmazonFreeRTOSManager {
             return;
         }
         Log.i(TAG, "Sending Unsub ACK back to device.");
-        Gson gson = new Gson();
         Unsuback unsuback = new Unsuback();
         unsuback.type = MQTT_MSG_UNSUBACK;
         unsuback.msgID = unsubscribe.msgID;
-        final String unsubackStr = gson.toJson(unsuback);
-        sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
-                UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, unsubackStr));
+        byte[] unsubackBytes = unsuback.encode();
+        if (unsubackBytes != null) {
+            sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, unsubackBytes));
+        }
     }
 
     private void publishToIoT(final Publish publish) {
@@ -754,9 +797,8 @@ public class AmazonFreeRTOSManager {
             }
         };
         try {
-            byte[] data = Base64.getDecoder().decode(publish.getTopic());
-            String topic = new String(data);
-            data = Base64.getDecoder().decode(publish.getPayload());
+            String topic = publish.getTopic();
+            byte[] data = publish.getPayload();
             Log.i(TAG, "Sending mqtt message to IoT on topic: " + topic + " message: " + new String(data));
             mIotMqttManager.publishData(data, topic, AWSIotMqttQos.values()[publish.getQos()],
                     deliveryCallback, null);
@@ -772,13 +814,14 @@ public class AmazonFreeRTOSManager {
             return;
         }
         Log.i(TAG, "Sending PUB ACK back to device.");
-        Gson gson = new Gson();
         Puback puback = new Puback();
         puback.type = MQTT_MSG_PUBACK;
         puback.msgID = publish.getMsgID();
-        final String pubackStr = gson.toJson(puback);
-        sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
-                UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, pubackStr));
+        byte[] pubackBytes = puback.encode();
+        if (pubackBytes != null) {
+            sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, pubackBytes));
+        }
     }
 
     private void publishToDevice(final Publish publish) {
@@ -788,24 +831,23 @@ public class AmazonFreeRTOSManager {
             return;
         }
         Log.d(TAG, "Sending received mqtt message back to device, topic: " + publish.getTopic()
-                + " message: " + publish.getPayload());
-        Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-        final String publishStr = gson.toJson(publish);
-        if (publishStr.length() < mMaxPayloadLen) {
-            sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
-                    UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, publishStr));
-        } else {
-            mTotalPackets = publishStr.length()/ mMaxPayloadLen + 1;
-            Log.i(TAG, "This message is larger than max payload size: " + mMaxPayloadLen
-                    + ". Breaking down to " + mTotalPackets + " packets.");
-            mRxLargeObject.setLength(0); //clear the string
-            mPacketCount = 1; //reset packet count
-            mRxLargeObject.append(publishStr);
-            String packet = mRxLargeObject.substring(0, mMaxPayloadLen);
-            Log.d(TAG, "Packet #" + mPacketCount + ": " + packet);
-            sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                + " message: " + bytesToHexString(publish.getPayload()) );
+        byte[] publishBytes = publish.encode();
+        if (publishBytes != null) {
+            if (publishBytes.length < mMaxPayloadLen) {
+                sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                    UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, publishBytes));
+            } else {
+                mTotalPackets = publishBytes.length / mMaxPayloadLen + 1;
+                Log.i(TAG, "This message is larger than max payload size: " + mMaxPayloadLen
+                        + ". Breaking down to " + mTotalPackets + " packets.");
+                mPacketCount = 1; //reset packet count
+                mRxLargeObject = Arrays.copyOf(publishBytes, publishBytes.length);
+                byte[] packet = Arrays.copyOfRange(mRxLargeObject, 0, mMaxPayloadLen);
+                Log.d(TAG, "Packet #" + mPacketCount + ": " + bytesToHexString(packet));
+                sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
                     UUID_MQTT_PROXY_RXLARGE_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, packet));
-            mRxLargeObject.delete(0, mMaxPayloadLen);
+            }
         }
     }
 
@@ -824,11 +866,11 @@ public class AmazonFreeRTOSManager {
         }
     }
 
-    private void writeCharacteristic(final String serviceUuid, final String characteristicUuid, final String value) {
+    private void writeCharacteristic(final String serviceUuid, final String characteristicUuid, final byte[] value) {
         BluetoothGattCharacteristic characteristic = getCharacteristic(serviceUuid, characteristicUuid);
         if (characteristic != null) {
             Log.d(TAG, "<-<-<- Writing to characteristic: " + uuidToName.get(characteristicUuid)
-                    + "  with data: " + value);
+                    + "  with data: " + bytesToHexString(value));
             characteristic.setValue(value);
             mBluetoothGatt.writeCharacteristic(characteristic);
         }
@@ -866,8 +908,8 @@ public class AmazonFreeRTOSManager {
         mBleCommandQueue.clear();
         mMessageId = 0;
         mMtu = 0;
-        mTxLargeObject.setLength(0);
-        mRxLargeObject.setLength(0);
+        mTxLargeObject.reset();
+        mRxLargeObject = null;
         mTotalPackets = 0;
         mPacketCount = 1;
 
@@ -900,6 +942,17 @@ public class AmazonFreeRTOSManager {
         final long LSB = 0x800000805f9b34fbL;
         long value = i & 0xFFFFFFFF;
         return new UUID(MSB | (value << 32), LSB);
+    }
+
+    private static String bytesToHexString(byte[] bytes) {
+        StringBuilder sb = new StringBuilder(bytes.length * 2);
+
+        Formatter formatter = new Formatter(sb);
+        for (byte b : bytes) {
+            formatter.format("%02x", b);
+        }
+
+        return sb.toString();
     }
 
     private void describeGattServices(List<BluetoothGattService> gattServices) {
@@ -984,10 +1037,11 @@ public class AmazonFreeRTOSManager {
      */
     public void listNetworks(ListNetworkReq listNetworkReq, NetworkConfigCallback callback) {
         mNetworkConfigCallback = callback;
-        Gson gson = new Gson();
-        final String listNetworkReqStr = gson.toJson(listNetworkReq);
-        sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
-                UUID_LIST_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, listNetworkReqStr));
+        byte[] listNetworkReqBytes = listNetworkReq.encode();
+        if (listNetworkReqBytes != null) {
+            sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                UUID_LIST_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, listNetworkReqBytes));
+        }
     }
 
     /**
@@ -999,10 +1053,11 @@ public class AmazonFreeRTOSManager {
      */
     public void saveNetwork(SaveNetworkReq saveNetworkReq, NetworkConfigCallback callback) {
         mNetworkConfigCallback = callback;
-        Gson gson = new Gson();
-        final String saveNetworkReqStr = gson.toJson(saveNetworkReq);
-        sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
-                UUID_SAVE_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, saveNetworkReqStr));
+        byte[] saveNetworkReqBytes = saveNetworkReq.encode();
+        if (saveNetworkReqBytes != null) {
+           sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                UUID_SAVE_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, saveNetworkReqBytes));
+        }
     }
 
     /**
@@ -1017,10 +1072,11 @@ public class AmazonFreeRTOSManager {
      */
     public void editNetwork(EditNetworkReq editNetworkReq, NetworkConfigCallback callback) {
         mNetworkConfigCallback = callback;
-        Gson gson = new Gson();
-        final String editNetworkReqStr = gson.toJson(editNetworkReq);
-        sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
-                UUID_EDIT_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, editNetworkReqStr));
+        byte[] editNetworkReqBytes = editNetworkReq.encode();
+        if (editNetworkReqBytes != null) {
+            sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                UUID_EDIT_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, editNetworkReqBytes));
+        }
     }
 
     /**
@@ -1032,9 +1088,10 @@ public class AmazonFreeRTOSManager {
      */
     public void deleteNetwork(DeleteNetworkReq deleteNetworkReq, NetworkConfigCallback callback) {
         mNetworkConfigCallback = callback;
-        Gson gson = new Gson();
-        final String deleteNetworkReqStr = gson.toJson(deleteNetworkReq);
-        sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
-                UUID_DELETE_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, deleteNetworkReqStr));
+        byte[] deleteNetworkReqBytes = deleteNetworkReq.encode();
+        if (deleteNetworkReqBytes != null) {
+            sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                    UUID_DELETE_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, deleteNetworkReqBytes));
+        }
     }
 }
