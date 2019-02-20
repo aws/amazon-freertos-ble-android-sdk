@@ -58,6 +58,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.logging.Level;
 
 import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.*;
@@ -603,7 +604,7 @@ public class AmazonFreeRTOSManager {
                   Currently, because the IoT part of aws mobile sdk for Android
                   does not provide suback callback when subscribe is successful,
                   we create a fake suback message and send to device as a workaround.
-                  Wait for 1 sec so that the subscribe is complete. Potential bug:
+                  Wait for 0.5 sec so that the subscribe is complete. Potential bug:
                   Message is received from the subscribed topic before suback
                   is sent to device.
                  */
@@ -612,7 +613,7 @@ public class AmazonFreeRTOSManager {
                         public void run() {
                             sendSubAck(subscribe);
                         }
-                    }, 1000);
+                    }, 500);
                 }
                 break;
             case MQTT_MSG_UNSUBSCRIBE:
@@ -640,7 +641,10 @@ public class AmazonFreeRTOSManager {
                  AWS Iot SDK currently sends pub ack back to cloud without waiting
                  for pub ack from device.
                  */
-                Log.w(TAG, "Received mqtt pub ack from device. ");
+                final Puback puback = new Puback();
+                if (puback.decode(message)) {
+                    Log.w(TAG, "Received mqtt pub ack from device. MsgID: " + puback.msgID);
+                }
                 break;
             default:
                 Log.e(TAG, "Unknown mqtt message type: " + mqttProxyMessage.type);
@@ -648,6 +652,11 @@ public class AmazonFreeRTOSManager {
     }
 
     private void connectToIoT(final Connect connect) {
+        if (mMqttConnectionState == MqttConnectionState.MQTT_Connected) {
+            Log.w(TAG, "Already connected to IOT, sending connack to device again.");
+            sendConnAck();
+            return;
+        }
         if (mMqttConnectionState != MqttConnectionState.MQTT_Disconnected) {
             Log.w(TAG, "Previous connection is active, please retry or disconnect mqtt first.");
             return;
@@ -664,17 +673,9 @@ public class AmazonFreeRTOSManager {
                         mMqttConnectionState = MqttConnectionState.MQTT_Connected;
                         //sending connack
                         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED) {
-                            Connack connack = new Connack();
-                            connack.type = MQTT_MSG_CONNACK;
-                            connack.status = MqttConnectionState.MQTT_Connected.ordinal();
-                            byte[] connackBytes = connack.encode();
-                            if (connackBytes != null) {
-                                sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
-                                    UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE,
-                                    connackBytes));
-                            }
+                            sendConnAck();
                         } else {
-                            Log.e(TAG, "Cannot send CONACK because BLE connection is: " + mBleConnectionState);
+                            Log.e(TAG, "Cannot send CONNACK because BLE connection is: " + mBleConnectionState);
                         }
                         break;
                     case Connecting:
@@ -727,6 +728,18 @@ public class AmazonFreeRTOSManager {
             } catch (Exception e) {
                 Log.e(TAG, "Subscription error.", e);
             }
+        }
+    }
+
+    private void sendConnAck() {
+        Connack connack = new Connack();
+        connack.type = MQTT_MSG_CONNACK;
+        connack.status = MqttConnectionState.MQTT_Connected.ordinal();
+        byte[] connackBytes = connack.encode();
+        if (connackBytes != null) {
+            sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                    UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE,
+                    connackBytes));
         }
     }
 
@@ -799,7 +812,9 @@ public class AmazonFreeRTOSManager {
         try {
             String topic = publish.getTopic();
             byte[] data = publish.getPayload();
-            Log.i(TAG, "Sending mqtt message to IoT on topic: " + topic + " message: " + new String(data));
+            Log.i(TAG, "Sending mqtt message to IoT on topic: " + topic
+                    + " message: " + new String(data)
+                    + " MsgID: " + publish.getMsgID());
             mIotMqttManager.publishData(data, topic, AWSIotMqttQos.values()[publish.getQos()],
                     deliveryCallback, null);
         } catch (Exception e) {
@@ -813,7 +828,7 @@ public class AmazonFreeRTOSManager {
                     " is not connected");
             return;
         }
-        Log.i(TAG, "Sending PUB ACK back to device.");
+        Log.i(TAG, "Sending PUB ACK back to device. MsgID: " + publish.getMsgID());
         Puback puback = new Puback();
         puback.type = MQTT_MSG_PUBACK;
         puback.msgID = publish.getMsgID();
@@ -831,7 +846,8 @@ public class AmazonFreeRTOSManager {
             return;
         }
         Log.d(TAG, "Sending received mqtt message back to device, topic: " + publish.getTopic()
-                + " message: " + bytesToHexString(publish.getPayload()) );
+                + " payload bytes: " + bytesToHexString(publish.getPayload())
+                + " MsgID: " + publish.getMsgID());
         byte[] publishBytes = publish.encode();
         if (publishBytes != null) {
             if (publishBytes.length < mMaxPayloadLen) {

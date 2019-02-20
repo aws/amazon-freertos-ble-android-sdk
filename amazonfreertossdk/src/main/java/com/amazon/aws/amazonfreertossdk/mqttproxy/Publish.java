@@ -103,10 +103,12 @@ public class Publish {
             type = ((UnsignedInteger) dataItem).getValue().intValue();
             dataItem = map.get(new UnicodeString(TOPIC_KEY));
             topic = ((UnicodeString) dataItem).getString();
-            dataItem = map.get(new UnicodeString(MSGID_KEY));
-            msgID = ((Number) dataItem).getValue().intValue();
             dataItem = map.get(new UnicodeString(QOS_KEY));
             qoS = ((Number) dataItem).getValue().intValue();
+            if (qoS != 0) {
+                dataItem = map.get(new UnicodeString(MSGID_KEY));
+                msgID = ((Number) dataItem).getValue().intValue();
+            }
             dataItem = map.get(new UnicodeString(PAYLOAD_KEY));
             payloadBytes = ((ByteString) dataItem).getBytes();
             return true;
