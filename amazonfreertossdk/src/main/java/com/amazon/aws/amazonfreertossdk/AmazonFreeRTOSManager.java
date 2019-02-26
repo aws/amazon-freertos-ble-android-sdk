@@ -565,15 +565,6 @@ public class AmazonFreeRTOSManager {
                 Log.d(TAG, "onCharacteristicWrite for: "
                         + uuidToName.get(characteristic.getUuid().toString())
                         + "; status: " + (status == 0 ? "Success" : status));
-                if (status == BluetoothGatt.GATT_SUCCESS
-                    && UUID_MQTT_PROXY_RXLARGE_CHARACTERISTIC.equals(characteristic.getUuid().toString())
-                    && mMaxPayloadLen * mPacketCount <= mRxLargeObject.length) {
-                    byte[] packet = Arrays.copyOfRange(mRxLargeObject, mMaxPayloadLen * mPacketCount,
-                            Math.min(mRxLargeObject.length, mMaxPayloadLen * mPacketCount + mMaxPayloadLen));
-                    Log.d(TAG, "Packet #" + (++mPacketCount) + ": " + bytesToHexString(packet));
-                    sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
-                            UUID_MQTT_PROXY_RXLARGE_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, packet));
-                }
                 processNextBleCommand();
             }
         };
@@ -857,12 +848,16 @@ public class AmazonFreeRTOSManager {
                 mTotalPackets = publishBytes.length / mMaxPayloadLen + 1;
                 Log.i(TAG, "This message is larger than max payload size: " + mMaxPayloadLen
                         + ". Breaking down to " + mTotalPackets + " packets.");
-                mPacketCount = 1; //reset packet count
+                mPacketCount = 0; //reset packet count
                 mRxLargeObject = Arrays.copyOf(publishBytes, publishBytes.length);
-                byte[] packet = Arrays.copyOfRange(mRxLargeObject, 0, mMaxPayloadLen);
-                Log.d(TAG, "Packet #" + mPacketCount + ": " + bytesToHexString(packet));
-                sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
-                    UUID_MQTT_PROXY_RXLARGE_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, packet));
+                while (mMaxPayloadLen * mPacketCount <= mRxLargeObject.length) {
+                    byte[] packet = Arrays.copyOfRange(mRxLargeObject, mMaxPayloadLen * mPacketCount,
+                            Math.min(mRxLargeObject.length, mMaxPayloadLen * mPacketCount + mMaxPayloadLen));
+                    mPacketCount++;
+                    Log.d(TAG, "Packet #" + mPacketCount + ": " + bytesToHexString(packet));
+                    sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
+                            UUID_MQTT_PROXY_RXLARGE_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, packet));
+                }
             }
         }
     }
@@ -885,6 +880,7 @@ public class AmazonFreeRTOSManager {
     private void writeCharacteristic(final String serviceUuid, final String characteristicUuid, final byte[] value) {
         BluetoothGattCharacteristic characteristic = getCharacteristic(serviceUuid, characteristicUuid);
         if (characteristic != null) {
+            characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
             Log.d(TAG, "<-<-<- Writing to characteristic: " + uuidToName.get(characteristicUuid)
                     + "  with data: " + bytesToHexString(value));
             characteristic.setValue(value);
