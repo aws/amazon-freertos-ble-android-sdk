@@ -27,7 +27,7 @@ import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants;
 import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSManager;
 import com.amazon.aws.amazonfreertossdk.BleConnectionStatusCallback;
 import com.amazon.aws.amazonfreertossdk.BleScanResultCallback;
-import com.amazonaws.mobile.auth.core.IdentityManager;
+import com.amazonaws.mobile.client.AWSMobileClient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -225,7 +225,7 @@ public class DeviceScanFragment extends Fragment {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.logout:
-                IdentityManager.getDefaultIdentityManager().signOut();
+                AWSMobileClient.getInstance().signOut();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

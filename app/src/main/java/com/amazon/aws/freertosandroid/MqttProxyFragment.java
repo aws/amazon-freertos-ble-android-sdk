@@ -13,9 +13,15 @@ import android.widget.Switch;
 import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSManager;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.mobile.client.AWSMobileClient;
+import com.amazonaws.mobileconnectors.iot.AWSIotCertificateException;
 
 public class MqttProxyFragment extends Fragment {
+    // Password for the private key in the KeyStore
+    private static final String KEYSTORE_PASSWORD = "password";
+    // Certificate and key aliases in the KeyStore
+    private static final String CERTIFICATE_ID = "default";
 
+    private static final boolean USING_KEYSTORE = false;
 
     private static final String TAG = "MqttProxyFragment";
     private Switch mqttProxySwitch;
@@ -29,9 +35,6 @@ public class MqttProxyFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mAmazonFreeRTOSManager = AmazonFreeRTOSAgent.getAmazonFreeRTOSManager(getActivity());
-        AWSCredentialsProvider credentialsProvider =
-                AWSMobileClient.getInstance().getCredentialsProvider();
-        mAmazonFreeRTOSManager.setCredentialProvider(credentialsProvider);
     }
 
     @Nullable
@@ -51,7 +54,23 @@ public class MqttProxyFragment extends Fragment {
                 }
             }
         });
+        mqttProxySwitch.setEnabled(false);
 
+        if (USING_KEYSTORE) {
+            Log.d(TAG, "Using KeyStore");
+            try {
+                mAmazonFreeRTOSManager.setKeyStore(CERTIFICATE_ID,
+                        getResources().openRawResource(R.raw.replace_with_keystore), KEYSTORE_PASSWORD);
+                mqttProxySwitch.setEnabled(true);
+            } catch (AWSIotCertificateException e) {
+                Log.e(TAG, "Failed to load KeyStore, cannot enable mqtt proxy.", e);
+            }
+        } else {
+            AWSCredentialsProvider credentialsProvider = AWSMobileClient.getInstance();
+            Log.d(TAG, "Using aws credential");
+            mAmazonFreeRTOSManager.setCredentialProvider(credentialsProvider);
+            mqttProxySwitch.setEnabled(true);
+        }
         return v;
     }
 

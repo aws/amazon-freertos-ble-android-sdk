@@ -19,6 +19,8 @@ import android.os.HandlerThread;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyStore;
 import java.util.Arrays;
 import android.os.ParcelUuid;
 import android.util.Log;
@@ -46,6 +48,8 @@ import com.amazon.aws.amazonfreertossdk.networkconfig.ListNetworkResp;
 import com.amazon.aws.amazonfreertossdk.networkconfig.SaveNetworkReq;
 import com.amazon.aws.amazonfreertossdk.networkconfig.SaveNetworkResp;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.mobileconnectors.iot.AWSIotCertificateException;
+import com.amazonaws.mobileconnectors.iot.AWSIotKeystoreHelper;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttClientStatusCallback;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttManager;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttMessageDeliveryCallback;
@@ -94,6 +98,7 @@ public class AmazonFreeRTOSManager {
     private AWSIotMqttManager mIotMqttManager;
 
     private AWSCredentialsProvider mCredentialProvider;
+    private KeyStore mClientKeyStore;
 
     private MqttConnectionState mMqttConnectionState = MqttConnectionState.MQTT_Disconnected;
 
@@ -154,6 +159,32 @@ public class AmazonFreeRTOSManager {
      */
     public void setCredentialProvider(AWSCredentialsProvider provider) {
         mCredentialProvider = provider;
+    }
+
+    /**
+     * Setting the KeyStore which contains the certificate used to connect to AWS IoT
+     * @param certId certificate and key alias in the KeyStore
+     * @param keyStoreInputStream InputStream that contains KeyStore content
+     * @param keyStorePassword Password of the KeyStore
+     * @throws AWSIotCertificateException When fails to load the KeyStore.
+     */
+    public void setKeyStore(final String certId,
+                            final InputStream keyStoreInputStream,
+                            final String keyStorePassword) {
+        mClientKeyStore = AWSIotKeystoreHelper.getIotKeystore(certId, keyStoreInputStream, keyStorePassword);
+    }
+
+    /**
+     * Setting the KeyStore which contains the certificated used to connect to AWS IoT
+     * @param certId certificate and key alias in the KeyStore
+     * @param keyStorePath File path where the KeyStore file is located
+     * @param keyStoreName The name of the KeyStore file
+     * @param keyStorePassword The password of the KeyStore file
+     * @throws AWSIotCertificateException When fails to load the KeyStore.
+     */
+    public void setKeyStore(final String certId, final String keyStorePath,
+                            final String keyStoreName, final String keyStorePassword) {
+        mClientKeyStore = AWSIotKeystoreHelper.getIotKeystore(certId, keyStorePath, keyStoreName, keyStorePassword);
     }
 
     /**
@@ -346,7 +377,7 @@ public class AmazonFreeRTOSManager {
      * @param enable A boolean to inidate whether to enable or disable MQTT proxy.
      */
     public void enableMqttProxy(final boolean enable) {
-        if (mCredentialProvider == null) {
+        if (mCredentialProvider == null && mClientKeyStore == null) {
             Log.e(TAG, "Cannot enable/disable mqtt proxy because Iot credential is not set.");
             return;
         }
@@ -652,12 +683,10 @@ public class AmazonFreeRTOSManager {
             Log.w(TAG, "Previous connection is active, please retry or disconnect mqtt first.");
             return;
         }
-        Log.i(TAG, "Connecting to IoT: " + connect.brokerEndpoint);
         mIotMqttManager = new AWSIotMqttManager(connect.clientID, connect.brokerEndpoint);
-
-        mIotMqttManager.connect(mCredentialProvider, new AWSIotMqttClientStatusCallback() {
+        AWSIotMqttClientStatusCallback mqttClientStatusCallback = new AWSIotMqttClientStatusCallback() {
             @Override
-            public void onStatusChanged(final AWSIotMqttClientStatus status, Throwable throwable) {
+            public void onStatusChanged(AWSIotMqttClientStatus status, Throwable throwable) {
                 Log.i(TAG, "mqtt connection status changed to: " + String.valueOf(status));
                 switch (status) {
                     case Connected:
@@ -682,7 +711,15 @@ public class AmazonFreeRTOSManager {
                         Log.e(TAG, "Unknown mqtt connection state: " + status);
                 }
             }
-        });
+        };
+
+        if (mClientKeyStore != null) {
+            Log.i(TAG, "Connecting to IoT using KeyStore: " + connect.brokerEndpoint);
+            mIotMqttManager.connect(mClientKeyStore, mqttClientStatusCallback);
+        } else {
+            Log.i(TAG, "Connecting to IoT using AWS credential: " + connect.brokerEndpoint);
+            mIotMqttManager.connect(mCredentialProvider, mqttClientStatusCallback);
+        }
     }
 
     private void subscribeToIoT(final Subscribe subscribe) {
