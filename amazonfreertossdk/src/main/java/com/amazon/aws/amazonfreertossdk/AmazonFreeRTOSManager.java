@@ -58,8 +58,10 @@ import com.amazonaws.mobileconnectors.iot.AWSIotMqttQos;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Formatter;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -684,6 +686,13 @@ public class AmazonFreeRTOSManager {
             return;
         }
         mIotMqttManager = new AWSIotMqttManager(connect.clientID, connect.brokerEndpoint);
+
+        Map<String, String> userMetaData = new HashMap<>();
+        userMetaData.put("AmazonFreeRTOSSDK", "Android");
+        userMetaData.put("AmazonFreeRTOSSDKVersion", AMAZONFREERTOS_SDK_VERSION);
+        userMetaData.put("AmazonFreeRTOSLibVersion", "1.4.7");
+        mIotMqttManager.addUserMetaData(userMetaData);
+
         AWSIotMqttClientStatusCallback mqttClientStatusCallback = new AWSIotMqttClientStatusCallback() {
             @Override
             public void onStatusChanged(AWSIotMqttClientStatus status, Throwable throwable) {
