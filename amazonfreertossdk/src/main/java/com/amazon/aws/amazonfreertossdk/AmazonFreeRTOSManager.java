@@ -200,6 +200,15 @@ public class AmazonFreeRTOSManager {
      *                           nearby that has AmazonFreeRTOS service UUID.
      */
     public void startScanBleDevices(final BleScanResultCallback scanResultCallback) {
+        startScanBleDevices(scanResultCallback, SCAN_PERIOD);
+    }
+
+    /**
+     * Start scanning nearby BLE devices for a total duration of scanDuration milliseconds.
+     * @param scanResultCallback The callback to notify the calling app of the scanning result.
+     * @param scanDuration The duration of scanning. Keep scanning if 0.
+     */
+    public void startScanBleDevices(final BleScanResultCallback scanResultCallback, long scanDuration) {
         if (scanResultCallback == null) {
             throw new IllegalArgumentException("BleScanResultCallback is null");
         }
@@ -211,24 +220,26 @@ public class AmazonFreeRTOSManager {
                 mScanHandlerThread.start();
                 mScanHandler = new Handler(mScanHandlerThread.getLooper());
             }
-            scanLeDevice();
+            scanLeDevice(scanDuration);
         } else {
             Log.e(TAG, "BluetoothAdaptor is null, please enable bluetooth.");
         }
     }
 
-    private void scanLeDevice() {
+    private void scanLeDevice(long duration) {
         if (mScanning) {
             Log.d(TAG, "Scanning is already in progress.");
             return;
         }
         // Stops scanning after a pre-defined scan period.
-        mScanHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                stopScanBleDevices();
-            }
-        }, SCAN_PERIOD);
+        if (duration != 0) {
+            mScanHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    stopScanBleDevices();
+                }
+            }, duration);
+        }
         Log.i(TAG, "Starting ble device scan");
         mScanning = true;
 
