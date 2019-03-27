@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
 import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
@@ -117,6 +118,8 @@ public class AmazonFreeRTOSManager {
     private byte[] mRxLargeObject;
     private int mTotalPackets = 0;
     private int mPacketCount = 1;
+
+    private static Semaphore mutex = new Semaphore(1);
     /**
      * Construct an AmazonFreeRTOSManager instance.
      * @param context The app context. Should be passed in by the app that creates a new instance
@@ -1045,30 +1048,38 @@ public class AmazonFreeRTOSManager {
                     + " Ble commands in the queue.");
             return;
         }
-        BleCommand bleCommand = mBleCommandQueue.poll();
-        if (bleCommand == null ) {
-            Log.d(TAG, "There's no ble command in the queue.");
-            mBleOperationInProgress = false;
-            return;
+        try {
+            mutex.acquire();
+            Log.d(TAG, "Acquired mutex");
+            BleCommand bleCommand = mBleCommandQueue.poll();
+            if (bleCommand == null) {
+                Log.d(TAG, "There's no ble command in the queue.");
+                mBleOperationInProgress = false;
+            } else {
+                mBleOperationInProgress = true;
+                Log.d(TAG, "Processing BLE command: " + bleCommand.getType()
+                        + " queue size: " + mBleCommandQueue.size());
+                switch (bleCommand.getType()) {
+                    case WRITE_DESCRIPTOR:
+                        writeDescriptor(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid());
+                        break;
+                    case WRITE_CHARACTERISTIC:
+                        writeCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid(),
+                                bleCommand.getData());
+                        break;
+                    case READ_CHARACTERISTIC:
+                        readCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid());
+                        break;
+                    default:
+                        Log.w(TAG, "Unknown Ble command, cannot process.");
+                }
+                mHandler.postDelayed(resetOperationInProgress, BLE_COMMAND_TIMEOUT);
+            }
+            mutex.release();
+            Log.d(TAG, "released mutex");
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Mutex error", e);
         }
-        mBleOperationInProgress = true;
-        Log.d(TAG, "Processing BLE command: " + bleCommand.getType()
-                + " queue size: " + mBleCommandQueue.size());
-        switch(bleCommand.getType()) {
-            case WRITE_DESCRIPTOR:
-                writeDescriptor(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid());
-                break;
-            case WRITE_CHARACTERISTIC:
-                writeCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid(),
-                        bleCommand.getData());
-                break;
-            case READ_CHARACTERISTIC:
-                readCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid());
-                break;
-            default:
-                Log.w(TAG, "Unknown Ble command, cannot process.");
-        }
-        mHandler.postDelayed(resetOperationInProgress, BLE_COMMAND_TIMEOUT);
     }
 
     private Runnable resetOperationInProgress = new Runnable() {
