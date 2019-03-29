@@ -194,13 +194,14 @@ public class AmazonFreeRTOSManager {
 
     /**
      * Start scanning of nearby BLE devices. It filters the scan result only with AmazonFreeRTOS
-     * service UUID. It keeps scanning for a period of AmazonFreeRTOSConstants.class#SCAN_PERIOD
-     * ms, then stops the scanning automatically. The scan result is passed back through the
-     * BleScanResultCallback. If at the time of calling this API, there's already an ongoing scanning,
-     * then this will return immediately without starting another scan.
+     * service UUID unless setScanFilters was explicitly called. It keeps scanning for a period of
+     * AmazonFreeRTOSConstants.class#SCAN_PERIOD ms, then stops the scanning automatically.
+     * The scan result is passed back through the BleScanResultCallback. If at the time of calling
+     * this API, there's already an ongoing scanning, then this will return immediately without
+     * starting another scan.
      * @param scanResultCallback The callback to notify the calling app of the scanning result. The
-     *                           callback will only be triggered, if it finds at least 1 BLE device
-     *                           nearby that has AmazonFreeRTOS service UUID.
+     *                           callback will be triggered, every time it finds a BLE device
+     *                           nearby that meets the ScanFilter criteria.
      */
     public void startScanBleDevices(final BleScanResultCallback scanResultCallback) {
         startScanBleDevices(scanResultCallback, SCAN_PERIOD);
@@ -277,6 +278,9 @@ public class AmazonFreeRTOSManager {
         @Override
         public void onScanFailed(int errorCode) {
             Log.e(TAG, "Error when scanning ble device. Error code: " + errorCode);
+            if (mBleScanResultCallback != null) {
+                mBleScanResultCallback.onBleScanFailed(errorCode);
+            }
         }
     };
 
@@ -390,7 +394,7 @@ public class AmazonFreeRTOSManager {
      * The request is sent asynchronously through BLE command. If enable is true, it enables MQTT
      * proxy. If enable is false, in addition to disable MQTT proxy, it also disconnects the MQTT
      * connection between the app and AWS IoT.
-     * @param enable A boolean to inidate whether to enable or disable MQTT proxy.
+     * @param enable A boolean to indicate whether to enable or disable MQTT proxy.
      */
     public void enableMqttProxy(final boolean enable) {
         if (mCredentialProvider == null && mClientKeyStore == null) {
@@ -762,7 +766,8 @@ public class AmazonFreeRTOSManager {
                     public void onMessageArrived(final String topic, final byte[] data) {
                         try {
                             String message = new String(data, "UTF-8");
-                            Log.i(TAG, " Message arrived on topic: " + topic + ";  message: " + message);
+                            Log.i(TAG, " Message arrived on topic: " + topic);
+                            Log.v(TAG, "   Message: " + message);
                             Publish publish = new Publish(
                                     MQTT_MSG_PUBLISH,
                                     topic,
@@ -998,7 +1003,7 @@ public class AmazonFreeRTOSManager {
     /**
      * Disconnect from AWS IoT.
      */
-    public void disconnectFromIot() {
+    private void disconnectFromIot() {
         if (mIotMqttManager != null) {
             try {
                 mIotMqttManager.disconnect();
@@ -1018,12 +1023,11 @@ public class AmazonFreeRTOSManager {
 
     private static String bytesToHexString(byte[] bytes) {
         StringBuilder sb = new StringBuilder(bytes.length * 2);
-
         Formatter formatter = new Formatter(sb);
-        for (byte b : bytes) {
-            formatter.format("%02x", b);
+        for (int i =0; i< bytes.length; i++) {
+            formatter.format("%02x", bytes[i]);
+            if (i > 10) break;
         }
-
         return sb.toString();
     }
 
@@ -1050,7 +1054,6 @@ public class AmazonFreeRTOSManager {
         }
         try {
             mutex.acquire();
-            Log.d(TAG, "Acquired mutex");
             BleCommand bleCommand = mBleCommandQueue.poll();
             if (bleCommand == null) {
                 Log.d(TAG, "There's no ble command in the queue.");
@@ -1076,7 +1079,6 @@ public class AmazonFreeRTOSManager {
                 mHandler.postDelayed(resetOperationInProgress, BLE_COMMAND_TIMEOUT);
             }
             mutex.release();
-            Log.d(TAG, "released mutex");
         } catch (InterruptedException e) {
             Log.e(TAG, "Mutex error", e);
         }

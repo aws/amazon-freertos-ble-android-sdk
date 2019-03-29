@@ -11,4 +11,6 @@ public abstract class BleScanResultCallback {
      * @param result BLE ScanResult
      */
     public void onBleScanResult(ScanResult result){}
+
+    public void onBleScanFailed(int errorcode) {}
 }

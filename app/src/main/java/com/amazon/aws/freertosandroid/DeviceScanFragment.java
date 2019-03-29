@@ -201,7 +201,7 @@ public class DeviceScanFragment extends Fragment {
                             mBleDeviceAdapter.notifyDataSetChanged();
                         }
                     }
-                });
+                }, 10000);
             }
         });
 
