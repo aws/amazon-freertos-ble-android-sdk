@@ -119,6 +119,7 @@ public class AmazonFreeRTOSManager {
     private int mTotalPackets = 0;
     private int mPacketCount = 1;
 
+    private byte[] mValueWritten;
     private static Semaphore mutex = new Semaphore(1);
     /**
      * Construct an AmazonFreeRTOSManager instance.
@@ -613,10 +614,15 @@ public class AmazonFreeRTOSManager {
             public void onCharacteristicWrite(BluetoothGatt gatt,
                                               BluetoothGattCharacteristic characteristic,
                                               int status) {
+                byte[] value = characteristic.getValue();
                 Log.d(TAG, "onCharacteristicWrite for: "
                         + uuidToName.get(characteristic.getUuid().toString())
-                        + "; status: " + (status == 0 ? "Success" : status));
-                processNextBleCommand();
+                        + "; status: " + (status == 0 ? "Success" : status) + "; value: " + bytesToHexString(value));
+                if (Arrays.equals(mValueWritten, value)) {
+                    processNextBleCommand();
+                } else {
+                    Log.e(TAG, "values don't match!");
+                }
             }
         };
 
@@ -948,8 +954,11 @@ public class AmazonFreeRTOSManager {
             characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
             Log.d(TAG, "<-<-<- Writing to characteristic: " + uuidToName.get(characteristicUuid)
                     + "  with data: " + bytesToHexString(value));
+            mValueWritten = value;
             characteristic.setValue(value);
-            mBluetoothGatt.writeCharacteristic(characteristic);
+            if(!mBluetoothGatt.writeCharacteristic(characteristic)) {
+                Log.e(TAG, "Failed to write characteristic.");
+            }
         }
     }
 
@@ -1047,36 +1056,36 @@ public class AmazonFreeRTOSManager {
     }
 
     private void processBleCommandQueue() {
-        if (mBleOperationInProgress) {
-            Log.d(TAG, "Ble operation is in progress. There are " + mBleCommandQueue.size()
-                    + " Ble commands in the queue.");
-            return;
-        }
         try {
             mutex.acquire();
-            BleCommand bleCommand = mBleCommandQueue.poll();
-            if (bleCommand == null) {
-                Log.d(TAG, "There's no ble command in the queue.");
-                mBleOperationInProgress = false;
+            if (mBleOperationInProgress) {
+                Log.d(TAG, "Ble operation is in progress. There are " + mBleCommandQueue.size()
+                        + " Ble commands in the queue.");
             } else {
-                mBleOperationInProgress = true;
-                Log.d(TAG, "Processing BLE command: " + bleCommand.getType()
-                        + " queue size: " + mBleCommandQueue.size());
-                switch (bleCommand.getType()) {
-                    case WRITE_DESCRIPTOR:
-                        writeDescriptor(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid());
-                        break;
-                    case WRITE_CHARACTERISTIC:
-                        writeCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid(),
-                                bleCommand.getData());
-                        break;
-                    case READ_CHARACTERISTIC:
-                        readCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid());
-                        break;
-                    default:
-                        Log.w(TAG, "Unknown Ble command, cannot process.");
+                BleCommand bleCommand = mBleCommandQueue.poll();
+                if (bleCommand == null) {
+                    Log.d(TAG, "There's no ble command in the queue.");
+                    mBleOperationInProgress = false;
+                } else {
+                    mBleOperationInProgress = true;
+                    Log.d(TAG, "Processing BLE command: " + bleCommand.getType()
+                            + " queue size: " + mBleCommandQueue.size());
+                    switch (bleCommand.getType()) {
+                        case WRITE_DESCRIPTOR:
+                            writeDescriptor(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid());
+                            break;
+                        case WRITE_CHARACTERISTIC:
+                            writeCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid(),
+                                    bleCommand.getData());
+                            break;
+                        case READ_CHARACTERISTIC:
+                            readCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid());
+                            break;
+                        default:
+                            Log.w(TAG, "Unknown Ble command, cannot process.");
+                    }
+                    mHandler.postDelayed(resetOperationInProgress, BLE_COMMAND_TIMEOUT);
                 }
-                mHandler.postDelayed(resetOperationInProgress, BLE_COMMAND_TIMEOUT);
             }
             mutex.release();
         } catch (InterruptedException e) {
