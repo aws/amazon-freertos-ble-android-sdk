@@ -20,6 +20,7 @@ import android.os.HandlerThread;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.security.KeyStore;
 import java.util.Arrays;
 import android.os.ParcelUuid;
@@ -65,11 +66,12 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
-import java.util.logging.Level;
 
 import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.*;
+import static com.amazon.aws.amazonfreertossdk.BleCommand.CommandType.DISCOVER_SERVICES;
 import static com.amazon.aws.amazonfreertossdk.BleCommand.CommandType.READ_CHARACTERISTIC;
+import static com.amazon.aws.amazonfreertossdk.BleCommand.CommandType.REQUEST_MTU;
 
 /**
  * This class manages MQTT proxy over BLE between the AmazonFreeRTOS Android SDK and AmazonFreeRTOS
@@ -112,6 +114,7 @@ public class AmazonFreeRTOSManager {
     private int mMaxPayloadLen = 0;
     //For large object transfers
     private int mMtu = 0;
+    private String mAmazonFreeRTOSLibVersion;
     //Buffer for receiving messages from device
     private ByteArrayOutputStream mTxLargeObject = new ByteArrayOutputStream();
     //Buffer for sending messages to device.
@@ -157,14 +160,6 @@ public class AmazonFreeRTOSManager {
      */
     public void setScanFilters(List<ScanFilter> filters) {
         mScanFilters = filters;
-    }
-
-    /**
-     * Setting the AWS Credential used for connecting to AWS IoT.
-     * @param provider AWSCredentialProvider.
-     */
-    public void setCredentialProvider(AWSCredentialsProvider provider) {
-        mCredentialProvider = provider;
     }
 
     /**
@@ -310,9 +305,9 @@ public class AmazonFreeRTOSManager {
      * Discover all the services and characteristics the BLE device supports. This must be called
      * after BLE connection is established, and before sending any BLE command to the device.
      */
-    public void discoverServices() {
+    private void discoverServices() {
         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
-            mBluetoothGatt.discoverServices();
+            sendBleCommand(new BleCommand(DISCOVER_SERVICES));
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
         }
@@ -327,8 +322,8 @@ public class AmazonFreeRTOSManager {
      */
     public void setMtu(int mtu) {
         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
-            Log.d(TAG, "Setting mtu to: " + mtu);
-            mBluetoothGatt.requestMtu(mtu);
+            Log.i(TAG, "Setting mtu to: " + mtu);
+            sendBleCommand(new BleCommand(REQUEST_MTU, mtu));
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
         }
@@ -434,7 +429,9 @@ public class AmazonFreeRTOSManager {
                     mBleConnectionState = BleConnectionState.BLE_CONNECTED;
                     //broadcastUpdate(intentAction);
                     Log.i(TAG, "Connected to GATT server.");
+                    discoverServices();
                     mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
+                    getDeviceVersion(null);
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     //intentAction = ACTION_GATT_DISCONNECTED;
                     mBleConnectionState = BleConnectionState.BLE_DISCONNECTED;
@@ -451,9 +448,7 @@ public class AmazonFreeRTOSManager {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     //broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
                     Log.i(TAG, "Discovered Ble gatt services successfully.");
-                    List<BluetoothGattService> gattServices;
-                    gattServices = mBluetoothGatt.getServices();
-                    describeGattServices(gattServices);
+                    describeGattServices(mBluetoothGatt.getServices());
                     sendBleCommand(new BleCommand(CommandType.WRITE_DESCRIPTOR,
                             UUID_MQTT_PROXY_TX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE));
                     sendBleCommand(new BleCommand(CommandType.WRITE_DESCRIPTOR,
@@ -466,10 +461,10 @@ public class AmazonFreeRTOSManager {
                             UUID_DELETE_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE));
                     sendBleCommand(new BleCommand(CommandType.WRITE_DESCRIPTOR,
                             UUID_EDIT_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE));
-                    getMtu();
                 } else {
                     Log.e(TAG, "onServicesDiscovered received: " + status);
                 }
+                processNextBleCommand();
             }
 
             @Override
@@ -598,6 +593,7 @@ public class AmazonFreeRTOSManager {
                         case UUID_DEVICE_VERSION_CHARACTERISTIC:
                             Version currentVersion = new Version();
                             currentVersion.version = new String(responseBytes);
+                            mAmazonFreeRTOSLibVersion = currentVersion.version;
                             Log.i(TAG, "Ble software version on device is: " + currentVersion.version);
                             if (mDeviceInfoCallback != null) {
                                 mDeviceInfoCallback.onObtainDeviceSoftwareVersion(currentVersion.version);
@@ -714,7 +710,7 @@ public class AmazonFreeRTOSManager {
         Map<String, String> userMetaData = new HashMap<>();
         userMetaData.put("AmazonFreeRTOSSDK", "Android");
         userMetaData.put("AmazonFreeRTOSSDKVersion", AMAZONFREERTOS_SDK_VERSION);
-        userMetaData.put("AmazonFreeRTOSLibVersion", "1.4.7");
+        userMetaData.put("AmazonFreeRTOSLibVersion", mAmazonFreeRTOSLibVersion);
         mIotMqttManager.addUserMetaData(userMetaData);
 
         AWSIotMqttClientStatusCallback mqttClientStatusCallback = new AWSIotMqttClientStatusCallback() {
@@ -1080,6 +1076,16 @@ public class AmazonFreeRTOSManager {
                             break;
                         case READ_CHARACTERISTIC:
                             readCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid());
+                            break;
+                        case DISCOVER_SERVICES:
+                            if (!mBluetoothGatt.discoverServices()) {
+                                Log.e(TAG, "Failed to discover services!");
+                            }
+                            break;
+                        case REQUEST_MTU:
+                            if (!mBluetoothGatt.requestMtu(ByteBuffer.wrap(bleCommand.getData()).getInt())) {
+                                Log.e(TAG, "Failed to set MTU.");
+                            }
                             break;
                         default:
                             Log.w(TAG, "Unknown Ble command, cannot process.");

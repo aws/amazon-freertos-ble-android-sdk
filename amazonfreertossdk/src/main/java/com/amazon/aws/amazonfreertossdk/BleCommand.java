@@ -1,5 +1,7 @@
 package com.amazon.aws.amazonfreertossdk;
 
+import java.nio.ByteBuffer;
+
 import lombok.Getter;
 
 /**
@@ -10,7 +12,9 @@ public class BleCommand {
     enum CommandType {
         WRITE_DESCRIPTOR,
         WRITE_CHARACTERISTIC,
-        READ_CHARACTERISTIC
+        READ_CHARACTERISTIC,
+        DISCOVER_SERVICES,
+        REQUEST_MTU
     }
 
     /**
@@ -54,9 +58,14 @@ public class BleCommand {
      * @param sUuid the service uuid.
      */
     public BleCommand(CommandType t, String cUuid, String sUuid) {
-        type = t;
-        characteristicUuid = cUuid;
-        serviceUuid = sUuid;
-        data = null;
+        this(t, cUuid, sUuid, null);
+    }
+
+    public BleCommand(CommandType t) {
+        this(t, null, null);
+    }
+
+    public BleCommand(CommandType t, int mtu) {
+        this(t, null, null, ByteBuffer.allocate(4).putInt(mtu).array());
     }
 }

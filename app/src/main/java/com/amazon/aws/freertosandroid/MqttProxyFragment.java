@@ -11,8 +11,6 @@ import android.widget.CompoundButton;
 import android.widget.Switch;
 
 import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSManager;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.mobile.client.AWSMobileClient;
 import com.amazonaws.mobileconnectors.iot.AWSIotCertificateException;
 
 public class MqttProxyFragment extends Fragment {
@@ -66,9 +64,7 @@ public class MqttProxyFragment extends Fragment {
                 Log.e(TAG, "Failed to load KeyStore, cannot enable mqtt proxy.", e);
             }
         } else {
-            AWSCredentialsProvider credentialsProvider = AWSMobileClient.getInstance();
             Log.d(TAG, "Using aws credential");
-            mAmazonFreeRTOSManager.setCredentialProvider(credentialsProvider);
             mqttProxySwitch.setEnabled(true);
         }
         return v;

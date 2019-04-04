@@ -89,9 +89,6 @@ public class DeviceScanFragment extends Fragment {
                         @Override
                         public boolean onMenuItemClick(MenuItem item) {
                             switch (item.getItemId()) {
-                                case R.id.set_mtu_menu_id:
-                                    mAmazonFreeRTOSManager.setMtu(DemoConstants.MTU);
-                                    return true;
                                 case R.id.wifi_provisioning_menu_id:
                                     Intent intentToStartWifiProvision
                                             = WifiProvisionActivity.newIntent(getActivity());
@@ -118,6 +115,7 @@ public class DeviceScanFragment extends Fragment {
             public void onBleConnectionStatusChanged(AmazonFreeRTOSConstants.BleConnectionState connectionStatus) {
                 Log.i(TAG, "BLE connection status changed to: " + connectionStatus);
                 if (connectionStatus == AmazonFreeRTOSConstants.BleConnectionState.BLE_CONNECTED) {
+                    mAmazonFreeRTOSManager.setMtu(DemoConstants.MTU);
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -125,7 +123,6 @@ public class DeviceScanFragment extends Fragment {
                             mMenuTextView.setTextColor(getResources().getColor(R.color.colorAccent, null));
                         }
                     });
-                    mAmazonFreeRTOSManager.discoverServices();
                 } else if (connectionStatus == AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED) {
                     resetUI();
                 }
