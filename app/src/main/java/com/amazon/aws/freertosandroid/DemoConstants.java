@@ -1,7 +1,5 @@
 package com.amazon.aws.freertosandroid;
 
-import com.amazonaws.regions.Regions;
-
 public class DemoConstants {
     /*
      * Replace with your AWS IoT policy name.
@@ -12,15 +10,6 @@ public class DemoConstants {
      */
     final static String AWS_IOT_REGION = "us-west-2";
     /*
-     * Replace with your Amazon Cognito Identity pool ID. Make sure this matches the pool id in
-     * awsconfiguration.json file.
-     */
-    final static String COGNITO_POOL_ID = "us-west-2:xxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
-    /*
-     * Replace with your Amazon Cognito region, eg: Regions.US_WEST_2.
-     */
-    final static Regions COGNITO_REGION = Regions.US_WEST_2;
-    /*
      * Replace with the desired MTU value to set between the BLE device and the Android device.
      * Note: this is only required if you want to set MTU that is different than the original MTU
      * value on the BLE device. However, even after you set the MTU, the actual MTU value may be
@@ -28,9 +17,4 @@ public class DemoConstants {
      * Please refer to API documentation for AmazonFreeRTOSManager.class#setMtu.
      */
     static final int MTU = 512;
-
-    /*
-     * Replace with the UUID that is being advertised from the device to be connected.
-     */
-    static final String UUID_AmazonFreeRTOS = "8a7f1168-48af-4efb-83b5-e679f932ff00";
 }
