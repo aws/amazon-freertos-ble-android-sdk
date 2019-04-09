@@ -46,9 +46,9 @@ public class MqttProxyFragment extends Fragment {
             public void onCheckedChanged(CompoundButton v, boolean isChecked) {
                 Log.i(TAG, "mqtt proxy switch isChecked: " + (isChecked ? "ON":"OFF"));
                 if (isChecked) {
-                    mAmazonFreeRTOSManager.enableMqttProxy(true);
+                    mAmazonFreeRTOSManager.enableProxy();
                 } else {
-                    mAmazonFreeRTOSManager.enableMqttProxy(false);
+                    mAmazonFreeRTOSManager.disableProxy();
                 }
             }
         });

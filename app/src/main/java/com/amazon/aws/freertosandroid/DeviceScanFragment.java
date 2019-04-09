@@ -187,7 +187,7 @@ public class DeviceScanFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 Log.i(TAG, "scan button clicked.");
-                mAmazonFreeRTOSManager.startScanBleDevices(new BleScanResultCallback() {
+                mAmazonFreeRTOSManager.startScanDevices(new BleScanResultCallback() {
                     @Override
                     public void onBleScanResult(ScanResult result) {
                         BleDevice thisDevice = new BleDevice(result.getDevice().getName(),

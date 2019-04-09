@@ -4,8 +4,9 @@ android {
     compileSdkVersion 26
 
     defaultConfig {
-        minSdkVersion 26
+        minSdkVersion 22
         targetSdkVersion 26
+        
         versionCode 1
         versionName "1.0"
 
@@ -29,8 +30,6 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.support:appcompat-v7:26.1.0'
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     compileOnly 'org.projectlombok:lombok:1.18.4'
     annotationProcessor 'org.projectlombok:lombok:1.18.4'
 }

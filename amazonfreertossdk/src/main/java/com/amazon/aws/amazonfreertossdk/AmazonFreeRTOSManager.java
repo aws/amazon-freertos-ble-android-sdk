@@ -1,3 +1,18 @@
+/*
+ * Copyright 2010-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License").
+ * You may not use this file except in compliance with the License.
+ * A copy of the License is located at
+ *
+ *  http://aws.amazon.com/apache2.0
+ *
+ * or in the "license" file accompanying this file. This file is distributed
+ * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 package com.amazon.aws.amazonfreertossdk;
 
 import android.bluetooth.BluetoothAdapter;
@@ -69,6 +84,7 @@ import java.util.concurrent.Semaphore;
 
 import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.*;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.AmazonFreeRTOSError.BLE_DISCONNECTED_ERROR;
 import static com.amazon.aws.amazonfreertossdk.BleCommand.CommandType.DISCOVER_SERVICES;
 import static com.amazon.aws.amazonfreertossdk.BleCommand.CommandType.READ_CHARACTERISTIC;
 import static com.amazon.aws.amazonfreertossdk.BleCommand.CommandType.REQUEST_MTU;
@@ -199,8 +215,8 @@ public class AmazonFreeRTOSManager {
      *                           callback will be triggered, every time it finds a BLE device
      *                           nearby that meets the ScanFilter criteria.
      */
-    public void startScanBleDevices(final BleScanResultCallback scanResultCallback) {
-        startScanBleDevices(scanResultCallback, SCAN_PERIOD);
+    public void startScanDevices(final BleScanResultCallback scanResultCallback) {
+        startScanDevices(scanResultCallback, SCAN_PERIOD);
     }
 
     /**
@@ -208,7 +224,7 @@ public class AmazonFreeRTOSManager {
      * @param scanResultCallback The callback to notify the calling app of the scanning result.
      * @param scanDuration The duration of scanning. Keep scanning if 0.
      */
-    public void startScanBleDevices(final BleScanResultCallback scanResultCallback, long scanDuration) {
+    public void startScanDevices(final BleScanResultCallback scanResultCallback, long scanDuration) {
         if (scanResultCallback == null) {
             throw new IllegalArgumentException("BleScanResultCallback is null");
         }
@@ -236,7 +252,7 @@ public class AmazonFreeRTOSManager {
             mScanHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    stopScanBleDevices();
+                    stopScanDevices();
                 }
             }, duration);
         }
@@ -251,7 +267,7 @@ public class AmazonFreeRTOSManager {
      * Stop scanning of nearby BLE devices. If there's no ongoing BLE scanning, then it will return
      * immediately.
      */
-    public void stopScanBleDevices() {
+    public void stopScanDevices() {
         if (!mScanning) {
             Log.w(TAG, "No ble device scan is currently in progress.");
             return;
@@ -282,7 +298,7 @@ public class AmazonFreeRTOSManager {
 
     /**
      * Connect to the BLE device, and notify the connection state via BleConnectionStatusCallback.
-     * Must do a scan of BLE device first by calling startScanBleDevices.
+     * Must do a scan of BLE device first by calling startScanDevices.
      * @param bluetoothDevice The BLE device from the scan result of startScanBleDevice.
      * @param connectionStatusCallback The callback to notify app whether the BLE connection is
      *                                 successful. Must not be null.
@@ -343,6 +359,9 @@ public class AmazonFreeRTOSManager {
                     UUID_DEVICE_MTU_CHARACTERISTIC, UUID_DEVICE_INFORMATION_SERVICE));
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
+            if (mDeviceInfoCallback != null) {
+                mDeviceInfoCallback.onError(BLE_DISCONNECTED_ERROR);
+            }
         }
     }
 
@@ -365,6 +384,9 @@ public class AmazonFreeRTOSManager {
                     UUID_IOT_ENDPOINT_CHARACTERISTIC, UUID_DEVICE_INFORMATION_SERVICE));
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
+            if (mDeviceInfoCallback != null) {
+                mDeviceInfoCallback.onError(BLE_DISCONNECTED_ERROR);
+            }
         }
     }
 
@@ -382,6 +404,9 @@ public class AmazonFreeRTOSManager {
                     UUID_DEVICE_VERSION_CHARACTERISTIC, UUID_DEVICE_INFORMATION_SERVICE));
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
+            if (mDeviceInfoCallback != null) {
+                mDeviceInfoCallback.onError(BLE_DISCONNECTED_ERROR);
+            }
         }
     }
 
@@ -392,7 +417,7 @@ public class AmazonFreeRTOSManager {
      * connection between the app and AWS IoT.
      * @param enable A boolean to indicate whether to enable or disable MQTT proxy.
      */
-    public void enableMqttProxy(final boolean enable) {
+    private void enableMqttProxy(final boolean enable) {
         if (mCredentialProvider == null && mClientKeyStore == null) {
             Log.e(TAG, "Cannot enable/disable mqtt proxy because Iot credential is not set.");
             return;
@@ -410,6 +435,14 @@ public class AmazonFreeRTOSManager {
         if (!enable) {
             disconnectFromIot();
         }
+    }
+
+    public void enableProxy() {
+        enableMqttProxy(true);
+    }
+
+    public void disableProxy() {
+        enableMqttProxy(false);
     }
 
     /**
