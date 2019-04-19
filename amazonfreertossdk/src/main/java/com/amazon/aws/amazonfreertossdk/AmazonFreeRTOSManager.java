@@ -114,7 +114,6 @@ public class AmazonFreeRTOSManager {
     private BleScanResultCallback mBleScanResultCallback;
     private BleConnectionStatusCallback mBleConnectionStatusCallback;
     private NetworkConfigCallback mNetworkConfigCallback;
-    private DeviceInfoCallback mDeviceInfoCallback;
 
     private AWSIotMqttManager mIotMqttManager;
 
@@ -317,10 +316,6 @@ public class AmazonFreeRTOSManager {
         }
     }
 
-    /**
-     * Discover all the services and characteristics the BLE device supports. This must be called
-     * after BLE connection is established, and before sending any BLE command to the device.
-     */
     private void discoverServices() {
         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
             sendBleCommand(new BleCommand(DISCOVER_SERVICES));
@@ -329,14 +324,7 @@ public class AmazonFreeRTOSManager {
         }
     }
 
-    /**
-     * Set the mtu value. This method returns immediately. If the mtu value is valid, it will be set
-     * on the device, if the mtu value is large than the maximum value of either the device or the
-     * Android phone supports, the maximum mtu value will be set. App can later on call getMtu to
-     * confirm the actual mtu that is set between the device and the Android phone.
-     * @param mtu
-     */
-    public void setMtu(int mtu) {
+    private void setMtu(int mtu) {
         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
             Log.i(TAG, "Setting mtu to: " + mtu);
             sendBleCommand(new BleCommand(REQUEST_MTU, mtu));
@@ -345,68 +333,33 @@ public class AmazonFreeRTOSManager {
         }
     }
 
-    /**
-     * Get the current mtu value between device and Android phone. This method returns immediately.
-     * The request to get mtu value is asynchronous through BLE command. The response will be delivered
-     * through DeviceInfoCallback.
-     * @param callback The callback to notify app of current mtu value.
-     */
-    public void getMtu(DeviceInfoCallback callback) {
-        mDeviceInfoCallback = callback;
+    private void getMtu() {
         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
             Log.d(TAG, "Getting current MTU.");
             sendBleCommand(new BleCommand(CommandType.READ_CHARACTERISTIC,
                     UUID_DEVICE_MTU_CHARACTERISTIC, UUID_DEVICE_INFORMATION_SERVICE));
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
-            if (mDeviceInfoCallback != null) {
-                mDeviceInfoCallback.onError(BLE_DISCONNECTED_ERROR);
-            }
         }
     }
 
-    private void getMtu() {
-        getMtu(null);
-    }
-
-    /**
-     * Get the current broker endpoint on the device. This broker endpoint is used to connect to AWS
-     * IoT, hence, this is also the AWS IoT endpoint. This method returns immediately.
-     * The request is sent asynchronously through BLE command. The response will be delivered
-     * through DeviceInfoCallback.
-     * @param callback The callback to notify app of current broker endpoint on device.
-     */
-    public void getBrokerEndpoint(DeviceInfoCallback callback) {
-        mDeviceInfoCallback = callback;
+    private void getBrokerEndpoint() {
         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
             Log.d(TAG, "Getting broker endpoint.");
             sendBleCommand(new BleCommand(CommandType.READ_CHARACTERISTIC,
                     UUID_IOT_ENDPOINT_CHARACTERISTIC, UUID_DEVICE_INFORMATION_SERVICE));
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
-            if (mDeviceInfoCallback != null) {
-                mDeviceInfoCallback.onError(BLE_DISCONNECTED_ERROR);
-            }
         }
     }
 
-    /**
-     * Get the AmazonFreeRTOS library software version running on the device. This method returns
-     * immediately. The request is sent asynchronously through BLE command. The response will be
-     * delivered through DeviceInfoCallback.
-     * @param callback The callback to notify app of current software version.
-     */
-    public void getDeviceVersion(DeviceInfoCallback callback) {
-        mDeviceInfoCallback = callback;
+    private void getDeviceVersion() {
         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
             Log.d(TAG, "Getting ble software version on device.");
             sendBleCommand(new BleCommand(CommandType.READ_CHARACTERISTIC,
                     UUID_DEVICE_VERSION_CHARACTERISTIC, UUID_DEVICE_INFORMATION_SERVICE));
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
-            if (mDeviceInfoCallback != null) {
-                mDeviceInfoCallback.onError(BLE_DISCONNECTED_ERROR);
-            }
         }
     }
 
@@ -463,8 +416,8 @@ public class AmazonFreeRTOSManager {
                     //broadcastUpdate(intentAction);
                     Log.i(TAG, "Connected to GATT server.");
                     discoverServices();
-                    mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
-                    getDeviceVersion(null);
+                    getDeviceVersion();
+                    getMtu();
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     //intentAction = ACTION_GATT_DISCONNECTED;
                     mBleConnectionState = BleConnectionState.BLE_DISCONNECTED;
@@ -571,6 +524,7 @@ public class AmazonFreeRTOSManager {
                 mMtu = mtu;
                 mMaxPayloadLen = mMtu - 3;
                 mMaxPayloadLen = mMaxPayloadLen > 0 ? mMaxPayloadLen : 0;
+                mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
                 processNextBleCommand();
             }
 
@@ -604,14 +558,12 @@ public class AmazonFreeRTOSManager {
                         case UUID_DEVICE_MTU_CHARACTERISTIC:
                             Mtu currentMtu = new Mtu();
                             currentMtu.mtu = new String(responseBytes);
-                            Log.i(TAG, "Current MTU is set to: " + currentMtu.mtu);
+                            Log.i(TAG, "Default MTU is set to: " + currentMtu.mtu);
                             try {
                                 mMtu = Integer.parseInt(currentMtu.mtu);
-                                if (mDeviceInfoCallback != null) {
-                                    mDeviceInfoCallback.onObtainMtu(mMtu);
-                                }
+                                setMtu(mMtu);
                             } catch (NumberFormatException e) {
-                                Log.w(TAG, "Cannot parse current MTU value.");
+                                Log.e(TAG, "Cannot parse default MTU value.");
                             }
                             break;
                         case UUID_IOT_ENDPOINT_CHARACTERISTIC:
@@ -619,18 +571,12 @@ public class AmazonFreeRTOSManager {
                             currentEndpoint.brokerEndpoint = new String(responseBytes);
                             Log.i(TAG, "Current broker endpoint is set to: "
                                     + currentEndpoint.brokerEndpoint);
-                            if (mDeviceInfoCallback != null) {
-                                mDeviceInfoCallback.onObtainBrokerEndpoint(currentEndpoint.brokerEndpoint);
-                            }
                             break;
                         case UUID_DEVICE_VERSION_CHARACTERISTIC:
                             Version currentVersion = new Version();
                             currentVersion.version = new String(responseBytes);
                             mAmazonFreeRTOSLibVersion = currentVersion.version;
                             Log.i(TAG, "Ble software version on device is: " + currentVersion.version);
-                            if (mDeviceInfoCallback != null) {
-                                mDeviceInfoCallback.onObtainDeviceSoftwareVersion(currentVersion.version);
-                            }
                             break;
                         default:
                             Log.w(TAG, "Unknown characteristic read. ");
@@ -962,7 +908,7 @@ public class AmazonFreeRTOSManager {
         }
     }
 
-    private void writeDescriptor(final String serviceUuid, final String characteristicUuid) {
+    private boolean writeDescriptor(final String serviceUuid, final String characteristicUuid) {
         BluetoothGattCharacteristic characteristic = getCharacteristic(serviceUuid, characteristicUuid);
         if (characteristic != null) {
             mBluetoothGatt.setCharacteristicNotification(characteristic, true);
@@ -971,13 +917,15 @@ public class AmazonFreeRTOSManager {
             if (descriptor != null) {
                 descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                 mBluetoothGatt.writeDescriptor(descriptor);
+                return true;
             } else {
                 Log.w(TAG, "There's no such descriptor on characteristic: " + characteristicUuid);
             }
         }
+        return false;
     }
 
-    private void writeCharacteristic(final String serviceUuid, final String characteristicUuid, final byte[] value) {
+    private boolean writeCharacteristic(final String serviceUuid, final String characteristicUuid, final byte[] value) {
         BluetoothGattCharacteristic characteristic = getCharacteristic(serviceUuid, characteristicUuid);
         if (characteristic != null) {
             characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
@@ -987,8 +935,11 @@ public class AmazonFreeRTOSManager {
             characteristic.setValue(value);
             if(!mBluetoothGatt.writeCharacteristic(characteristic)) {
                 Log.e(TAG, "Failed to write characteristic.");
+            } else {
+                return true;
             }
         }
+        return false;
     }
 
     private BluetoothGattCharacteristic getCharacteristic(final String serviceUuid,
@@ -1007,12 +958,17 @@ public class AmazonFreeRTOSManager {
         return characteristic;
     }
 
-    private void readCharacteristic(final String serviceUuid, final String characteristicUuid) {
+    private boolean readCharacteristic(final String serviceUuid, final String characteristicUuid) {
         BluetoothGattCharacteristic characteristic = getCharacteristic(serviceUuid, characteristicUuid);
         if (characteristic != null) {
             Log.d(TAG, "<-<-<- Reading from characteristic: " + uuidToName.get(characteristicUuid));
-            mBluetoothGatt.readCharacteristic(characteristic);
+            if (!mBluetoothGatt.readCharacteristic(characteristic)) {
+                Log.e(TAG, "Failed to read characteristic.");
+            } else {
+                return true;
+            }
         }
+        return false;
     }
 
     /**
@@ -1052,33 +1008,6 @@ public class AmazonFreeRTOSManager {
         }
     }
 
-    private UUID convertFromInteger(int i) {
-        final long MSB = 0x0000000000001000L;
-        final long LSB = 0x800000805f9b34fbL;
-        long value = i & 0xFFFFFFFF;
-        return new UUID(MSB | (value << 32), LSB);
-    }
-
-    private static String bytesToHexString(byte[] bytes) {
-        StringBuilder sb = new StringBuilder(bytes.length * 2);
-        Formatter formatter = new Formatter(sb);
-        for (int i =0; i< bytes.length; i++) {
-            formatter.format("%02x", bytes[i]);
-            if (i > 10) break;
-        }
-        return sb.toString();
-    }
-
-    private void describeGattServices(List<BluetoothGattService> gattServices) {
-        for (BluetoothGattService service : gattServices) {
-            Log.d(TAG, "GattService: " + service.getUuid());
-            List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
-            for (BluetoothGattCharacteristic characteristic : characteristics) {
-                Log.d(TAG, " |-characteristics: " + characteristic.getUuid());
-            }
-        }
-    }
-
     private void sendBleCommand(final BleCommand command) {
         mBleCommandQueue.add(command);
         processBleCommandQueue();
@@ -1099,31 +1028,46 @@ public class AmazonFreeRTOSManager {
                     mBleOperationInProgress = true;
                     Log.d(TAG, "Processing BLE command: " + bleCommand.getType()
                             + " queue size: " + mBleCommandQueue.size());
+                    boolean commandSent = false;
                     switch (bleCommand.getType()) {
                         case WRITE_DESCRIPTOR:
-                            writeDescriptor(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid());
+                            if (writeDescriptor(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid())) {
+                                commandSent = true;
+                            }
                             break;
                         case WRITE_CHARACTERISTIC:
-                            writeCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid(),
-                                    bleCommand.getData());
+                            if (writeCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid(),
+                                    bleCommand.getData())) {
+                                commandSent = true;
+                            }
                             break;
                         case READ_CHARACTERISTIC:
-                            readCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid());
+                            if (readCharacteristic(bleCommand.getServiceUuid(), bleCommand.getCharacteristicUuid())) {
+                                commandSent = true;
+                            }
                             break;
                         case DISCOVER_SERVICES:
-                            if (!mBluetoothGatt.discoverServices()) {
+                            if (mBluetoothGatt.discoverServices()) {
+                                commandSent = true;
+                            } else {
                                 Log.e(TAG, "Failed to discover services!");
                             }
                             break;
                         case REQUEST_MTU:
-                            if (!mBluetoothGatt.requestMtu(ByteBuffer.wrap(bleCommand.getData()).getInt())) {
+                            if (mBluetoothGatt.requestMtu(ByteBuffer.wrap(bleCommand.getData()).getInt())) {
+                                commandSent = true;
+                            } else {
                                 Log.e(TAG, "Failed to set MTU.");
                             }
                             break;
                         default:
                             Log.w(TAG, "Unknown Ble command, cannot process.");
                     }
-                    mHandler.postDelayed(resetOperationInProgress, BLE_COMMAND_TIMEOUT);
+                    if (commandSent) {
+                        mHandler.postDelayed(resetOperationInProgress, BLE_COMMAND_TIMEOUT);
+                    } else {
+                        mHandler.post(resetOperationInProgress);
+                    }
                 }
             }
             mutex.release();
@@ -1135,8 +1079,7 @@ public class AmazonFreeRTOSManager {
     private Runnable resetOperationInProgress = new Runnable() {
         @Override
         public void run() {
-            Log.w(TAG, "Ble command has timeout since it has not received response from device" +
-                    " after " + BLE_COMMAND_TIMEOUT + "ms");
+            Log.w(TAG, "Ble command failed to be sent OR timeout after " + BLE_COMMAND_TIMEOUT + "ms");
             // If current ble command timed out, process the next ble command.
             processNextBleCommand();
         }
@@ -1222,6 +1165,33 @@ public class AmazonFreeRTOSManager {
         if (deleteNetworkReqBytes != null) {
             sendBleCommand(new BleCommand(CommandType.WRITE_CHARACTERISTIC,
                     UUID_DELETE_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, deleteNetworkReqBytes));
+        }
+    }
+
+    private UUID convertFromInteger(int i) {
+        final long MSB = 0x0000000000001000L;
+        final long LSB = 0x800000805f9b34fbL;
+        long value = i & 0xFFFFFFFF;
+        return new UUID(MSB | (value << 32), LSB);
+    }
+
+    private static String bytesToHexString(byte[] bytes) {
+        StringBuilder sb = new StringBuilder(bytes.length * 2);
+        Formatter formatter = new Formatter(sb);
+        for (int i =0; i< bytes.length; i++) {
+            formatter.format("%02x", bytes[i]);
+            if (i > 10) break;
+        }
+        return sb.toString();
+    }
+
+    private void describeGattServices(List<BluetoothGattService> gattServices) {
+        for (BluetoothGattService service : gattServices) {
+            Log.d(TAG, "GattService: " + service.getUuid());
+            List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
+            for (BluetoothGattCharacteristic characteristic : characteristics) {
+                Log.d(TAG, " |-characteristics: " + characteristic.getUuid());
+            }
         }
     }
 }
