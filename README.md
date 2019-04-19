@@ -10,7 +10,7 @@ Using the Android SDK for Amazon FreeRTOS Bluetooth Devices, you can create mobi
 
 ## System requirements
 
-- Android 8.0 (API level 26) or higher
+- Android 6.0 (API level 23) or higher
 
 - Android Studio
 
@@ -54,26 +54,25 @@ The SDK includes some functions that help you perform BLE operations with Amazon
 startScanBleDevices(final BleScanResultCallback scanResultCallback)
 stopScanBleDevices()
 connectToDevice(final BluetoothDevice bluetoothDevice, final BleConnectionStatusCallback connectionStatusCallback)
-discoverServices()
 close()
 ```
+### WiFi Provisioning Service
 
-### Device Information Service 
-
-The device information service provides basic device-related information. Its functions include:
+Provision the WiFi credential on the Amazon FreeRTOS device through the app. It provides 4 functions:
 
 ```
-setMtu(int mtu)
-getMtu(DeviceInfoCallback callback)
-getBrokerEndpoint(DeviceInfoCallback callback)
-getDeviceVersion(DeviceInfoCallback callback)
-```
+ListNetwork
+SaveNetwork
+EditNetwork
+DeleteNetwork
+````
 
 ### MQTT Proxy Service 
 
 The MQTT proxy service controls the MQTT proxy. Its functions include:
 ```
-enableMqttProxy(final boolean enable)
+enableProxy()
+disableProxy()
 disconnectFromIot()
 ```
 
