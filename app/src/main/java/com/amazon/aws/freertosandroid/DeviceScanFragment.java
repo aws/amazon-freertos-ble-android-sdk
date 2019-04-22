@@ -24,6 +24,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants;
+import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSDevice;
 import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSManager;
 import com.amazon.aws.amazonfreertossdk.BleConnectionStatusCallback;
 import com.amazon.aws.amazonfreertossdk.BleScanResultCallback;
@@ -66,14 +67,17 @@ public class DeviceScanFragment extends Fragment {
             mBleDeviceNameTextView.setText(mBleDevice.getName());
             mBleDeviceMacTextView.setText(mBleDevice.getMacAddr());
             mBleDeviceSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
+                AmazonFreeRTOSDevice aDevice = null;
                 @Override
                 public void onCheckedChanged(CompoundButton v, boolean isChecked) {
                     Log.i(TAG, "connect switch isChecked: " + (isChecked ? "ON":"OFF"));
                     if (isChecked) {
-                        mAmazonFreeRTOSManager.connectToDevice(mBleDevice.getBluetoothDevice(),
+                        aDevice = mAmazonFreeRTOSManager.connectToDevice(mBleDevice.getBluetoothDevice(),
                                 connectionStatusCallback);
                     } else {
-                        mAmazonFreeRTOSManager.close();
+                        if (aDevice != null) {
+                            mAmazonFreeRTOSManager.disconnectFromDevice(aDevice);
+                        }
                         resetUI();
                     }
                 }
@@ -91,12 +95,12 @@ public class DeviceScanFragment extends Fragment {
                             switch (item.getItemId()) {
                                 case R.id.wifi_provisioning_menu_id:
                                     Intent intentToStartWifiProvision
-                                            = WifiProvisionActivity.newIntent(getActivity());
+                                            = WifiProvisionActivity.newIntent(getActivity(), mBleDevice.getMacAddr());
                                     startActivity(intentToStartWifiProvision);
                                     return true;
                                 case R.id.mqtt_proxy_menu_id:
                                     Intent intentToStartAuthenticator
-                                            = AuthenticatorActivity.newIntent(getActivity());
+                                            = AuthenticatorActivity.newIntent(getActivity(), mBleDevice.getMacAddr());
                                     startActivity(intentToStartAuthenticator);
                                     return true;
                             }

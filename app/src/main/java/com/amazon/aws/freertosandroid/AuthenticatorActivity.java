@@ -22,12 +22,14 @@ import com.amazonaws.services.iot.model.AttachPrincipalPolicyRequest;
 import java.util.concurrent.CountDownLatch;
 
 public class AuthenticatorActivity extends AppCompatActivity {
-
-    private final static String TAG = "AuthenticatorActivity";
+    public static final String EXTRA_DEVICE_MAC = "com.amazonaws.freertosandroid.device_mac";
+    private String mDeviceMac;
+    private final static String TAG = "AuthActivity";
     private HandlerThread handlerThread;
     private Handler handler;
-    public static Intent newIntent(Context packageContext) {
+    public static Intent newIntent(Context packageContext, String macAddr) {
         Intent intent = new Intent(packageContext, AuthenticatorActivity.class);
+        intent.putExtra(EXTRA_DEVICE_MAC, macAddr);
         return intent;
     }
 
@@ -35,7 +37,7 @@ public class AuthenticatorActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_fragment);
-
+        mDeviceMac = getIntent().getStringExtra(EXTRA_DEVICE_MAC);
         if ( handlerThread == null ) {
             handlerThread = new HandlerThread("SignInThread");
             handlerThread.start();
@@ -66,9 +68,10 @@ public class AuthenticatorActivity extends AppCompatActivity {
         handler.post(new Runnable() {
             @Override
             public void run() {
+                final Intent intent = MqttProxyActivity.newIntent(AuthenticatorActivity.this, mDeviceMac);
                 if (AWSMobileClient.getInstance().isSignedIn()) {
                     signinsuccessful();
-                    startActivity(new Intent(AuthenticatorActivity.this, MqttProxyActivity.class));
+                    startActivity(intent);
                 } else {
                     AWSMobileClient.getInstance().showSignIn(
                         AuthenticatorActivity.this,
@@ -83,7 +86,7 @@ public class AuthenticatorActivity extends AppCompatActivity {
                                     case SIGNED_IN:
                                         Log.i(TAG, "logged in!");
                                         signinsuccessful();
-                                        startActivity(new Intent(AuthenticatorActivity.this, MqttProxyActivity.class));
+                                        startActivity(intent);
                                         break;
                                     case SIGNED_OUT:
                                         Log.i(TAG, "onResult: User did not choose to sign-in");

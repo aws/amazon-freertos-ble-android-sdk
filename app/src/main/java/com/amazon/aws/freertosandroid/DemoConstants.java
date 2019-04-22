@@ -9,12 +9,4 @@ public class DemoConstants {
      * Replace with your AWS IoT region, eg: us-west-2.
      */
     final static String AWS_IOT_REGION = "us-west-2";
-    /*
-     * Replace with the desired MTU value to set between the BLE device and the Android device.
-     * Note: this is only required if you want to set MTU that is different than the original MTU
-     * value on the BLE device. However, even after you set the MTU, the actual MTU value may be
-     * smaller than what you set, because it is limited by the maximum MTU the devices can support.
-     * Please refer to API documentation for AmazonFreeRTOSManager.class#setMtu.
-     */
-    static final int MTU = 512;
 }

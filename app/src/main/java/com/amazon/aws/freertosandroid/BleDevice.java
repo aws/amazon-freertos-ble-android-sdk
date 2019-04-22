@@ -5,8 +5,8 @@ import android.bluetooth.BluetoothDevice;
 import java.util.Objects;
 
 public class BleDevice {
-    String name;
-    String macAddr;
+    private String name;
+    private String macAddr;
     private BluetoothDevice mBluetoothDevice;
 
     public BleDevice(String name, String macAddr, BluetoothDevice bluetoothDevice) {

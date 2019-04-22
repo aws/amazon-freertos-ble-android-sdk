@@ -22,6 +22,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSDevice;
 import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSManager;
 import com.amazon.aws.amazonfreertossdk.NetworkConfigCallback;
 import com.amazon.aws.amazonfreertossdk.networkconfig.DeleteNetworkReq;
@@ -43,10 +44,12 @@ import static android.support.v7.widget.helper.ItemTouchHelper.LEFT;
 import static android.support.v7.widget.helper.ItemTouchHelper.UP;
 
 public class WifiProvisionFragment extends Fragment {
-    private static final String TAG = "WifiProvisioningFragment";
+    private static final String TAG = "WifiFragment";
     private static final String DIALOG_TAG = "WiFiCredentialDialogTag";
     private static final int SAVED_NETWORK_RSSI = -100;
     private static final int REQUEST_CODE = 0;
+    private String mDeviceMacAddr;
+    private AmazonFreeRTOSDevice mDevice;
     private RecyclerView mWifiInfoRecyclerView;
     private WifiInfoAdapter mWifiInfoAdapter;
     private List<WifiInfo> mWifiInfoList = new ArrayList<>();
@@ -240,6 +243,7 @@ public class WifiProvisionFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mDeviceMacAddr = getActivity().getIntent().getStringExtra(WifiProvisionActivity.EXTRA_DEVICE_MAC);
     }
 
     @Nullable
@@ -256,9 +260,8 @@ public class WifiProvisionFragment extends Fragment {
         ItemTouchHelper itemTouchHelper = new ItemTouchHelper(dragSwipeController);
         itemTouchHelper.attachToRecyclerView(mWifiInfoRecyclerView);
         mAmazonFreeRTOSManager = AmazonFreeRTOSAgent.getAmazonFreeRTOSManager(getActivity());
-
+        mDevice = mAmazonFreeRTOSManager.getConnectedDevice(mDeviceMacAddr);
         listNetworks();
-
         return view;
     }
 
@@ -323,7 +326,11 @@ public class WifiProvisionFragment extends Fragment {
         saveNetworkReq.psk = pw;
         saveNetworkReq.security = wifiInfo.getNetworkType();
         saveNetworkReq.index = wifiInfo.getIndex();
-        mAmazonFreeRTOSManager.saveNetwork(saveNetworkReq, mNetworkConfigCallback);
+        if (mDevice != null) {
+            mDevice.saveNetwork(saveNetworkReq, mNetworkConfigCallback);
+        } else {
+            Log.e(TAG, "Device is not found. " + mDeviceMacAddr);
+        }
     }
 
     private void listNetworks() {
@@ -331,20 +338,32 @@ public class WifiProvisionFragment extends Fragment {
         ListNetworkReq listNetworkReq = new ListNetworkReq();
         listNetworkReq.maxNetworks = 20;
         listNetworkReq.timeout = 5;
-        mAmazonFreeRTOSManager.listNetworks(listNetworkReq, mNetworkConfigCallback);
+        if (mDevice != null) {
+            mDevice.listNetworks(listNetworkReq, mNetworkConfigCallback);
+        } else {
+            Log.e(TAG, "Device is not found. " + mDeviceMacAddr);
+        }
     }
 
     private void deleteNetwork(int index) {
         DeleteNetworkReq deleteNetworkReq = new DeleteNetworkReq();
         deleteNetworkReq.index = index;
-        mAmazonFreeRTOSManager.deleteNetwork(deleteNetworkReq, mNetworkConfigCallback);
+        if (mDevice != null) {
+            mDevice.deleteNetwork(deleteNetworkReq, mNetworkConfigCallback);
+        } else {
+            Log.e(TAG, "Device is not found. " + mDeviceMacAddr);
+        }
     }
 
     private void editNetwork(int oldIndex, int newIndex) {
         EditNetworkReq editNetworkReq = new EditNetworkReq();
         editNetworkReq.index = oldIndex;
         editNetworkReq.newIndex = newIndex;
-        mAmazonFreeRTOSManager.editNetwork(editNetworkReq, mNetworkConfigCallback);
+        if (mDevice != null) {
+            mDevice.editNetwork(editNetworkReq, mNetworkConfigCallback);
+        } else {
+            Log.e(TAG, "Device is not found. " + mDeviceMacAddr);
+        }
     }
 
     private String bssidToString(byte[] bssid) {

@@ -10,20 +10,16 @@ import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 
+import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSDevice;
 import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSManager;
-import com.amazonaws.mobileconnectors.iot.AWSIotCertificateException;
 
 public class MqttProxyFragment extends Fragment {
-    // Password for the private key in the KeyStore
-    private static final String KEYSTORE_PASSWORD = "password";
-    // Certificate and key aliases in the KeyStore
-    private static final String CERTIFICATE_ID = "default";
-
-    private static final boolean USING_KEYSTORE = false;
-
     private static final String TAG = "MqttProxyFragment";
     private Switch mqttProxySwitch;
     private AmazonFreeRTOSManager mAmazonFreeRTOSManager;
+
+    private String mDeviceMac;
+    private AmazonFreeRTOSDevice mDevice;
     public static MqttProxyFragment newInstance() {
         MqttProxyFragment fragment = new MqttProxyFragment();
         return fragment;
@@ -32,7 +28,9 @@ public class MqttProxyFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mDeviceMac = getActivity().getIntent().getStringExtra(MqttProxyActivity.EXTRA_DEVICE_MAC);
         mAmazonFreeRTOSManager = AmazonFreeRTOSAgent.getAmazonFreeRTOSManager(getActivity());
+        mDevice = mAmazonFreeRTOSManager.getConnectedDevice(mDeviceMac);
     }
 
     @Nullable
@@ -45,28 +43,18 @@ public class MqttProxyFragment extends Fragment {
             @Override
             public void onCheckedChanged(CompoundButton v, boolean isChecked) {
                 Log.i(TAG, "mqtt proxy switch isChecked: " + (isChecked ? "ON":"OFF"));
-                if (isChecked) {
-                    mAmazonFreeRTOSManager.enableProxy();
+                if (mDevice != null) {
+                    if (isChecked) {
+                        mDevice.enableProxy();
+                    } else {
+                        mDevice.disableProxy();
+                    }
                 } else {
-                    mAmazonFreeRTOSManager.disableProxy();
+                    Log.e(TAG, "There's no connected device: " + mDeviceMac);
                 }
             }
         });
-        mqttProxySwitch.setEnabled(false);
-
-        if (USING_KEYSTORE) {
-            Log.d(TAG, "Using KeyStore");
-            try {
-                mAmazonFreeRTOSManager.setKeyStore(CERTIFICATE_ID,
-                        getResources().openRawResource(R.raw.replace_with_keystore), KEYSTORE_PASSWORD);
-                mqttProxySwitch.setEnabled(true);
-            } catch (AWSIotCertificateException e) {
-                Log.e(TAG, "Failed to load KeyStore, cannot enable mqtt proxy.", e);
-            }
-        } else {
-            Log.d(TAG, "Using aws credential");
-            mqttProxySwitch.setEnabled(true);
-        }
+        mqttProxySwitch.setEnabled(true);
         return v;
     }
 
