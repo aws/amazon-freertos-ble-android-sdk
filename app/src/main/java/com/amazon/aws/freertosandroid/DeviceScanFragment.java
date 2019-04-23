@@ -135,6 +135,7 @@ public class DeviceScanFragment extends Fragment {
         private void resetUI() {
             mMenuTextView.setEnabled(false);
             mMenuTextView.setTextColor(Color.GRAY);
+            mBleDeviceSwitch.setChecked(false);
         }
 
     }
