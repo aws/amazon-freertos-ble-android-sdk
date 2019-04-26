@@ -77,6 +77,7 @@ import lombok.NonNull;
 
 import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.AMAZONFREERTOS_SDK_VERSION;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.AmazonFreeRTOSError.BLE_DISCONNECTED_ERROR;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.BLE_COMMAND_TIMEOUT;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_CONNACK;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_CONNECT;
@@ -121,6 +122,7 @@ public class AmazonFreeRTOSDevice {
     private BluetoothGatt mBluetoothGatt;
     private BleConnectionStatusCallback mBleConnectionStatusCallback;
     private NetworkConfigCallback mNetworkConfigCallback;
+    private DeviceInfoCallback mDeviceInfoCallback;
     private BleConnectionState mBleConnectionState = BleConnectionState.BLE_DISCONNECTED;
     private String mAmazonFreeRTOSLibVersion;
     private int mMtu = 0;
@@ -267,6 +269,46 @@ public class AmazonFreeRTOSDevice {
         if (deleteNetworkReqBytes != null) {
             sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
                     UUID_DELETE_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, deleteNetworkReqBytes));
+        }
+    }
+
+    /**
+     * Get the current mtu value between device and Android phone. This method returns immediately.
+     * The request to get mtu value is asynchronous through BLE command. The response will be delivered
+     * through DeviceInfoCallback.
+     * @param callback The callback to notify app of current mtu value.
+     */
+    public void getMtu(DeviceInfoCallback callback) {
+        mDeviceInfoCallback = callback;
+        if (!getMtu() && mDeviceInfoCallback != null) {
+            mDeviceInfoCallback.onError(BLE_DISCONNECTED_ERROR);
+        }
+    }
+
+    /**
+     * Get the current broker endpoint on the device. This broker endpoint is used to connect to AWS
+     * IoT, hence, this is also the AWS IoT endpoint. This method returns immediately.
+     * The request is sent asynchronously through BLE command. The response will be delivered
+     * through DeviceInfoCallback.
+     * @param callback The callback to notify app of current broker endpoint on device.
+     */
+    public void getBrokerEndpoint(DeviceInfoCallback callback) {
+        mDeviceInfoCallback = callback;
+        if (!getBrokerEndpoint() && mDeviceInfoCallback != null) {
+            mDeviceInfoCallback.onError(BLE_DISCONNECTED_ERROR);
+        }
+    }
+
+    /**
+     * Get the AmazonFreeRTOS library software version running on the device. This method returns
+     * immediately. The request is sent asynchronously through BLE command. The response will be
+     * delivered through DeviceInfoCallback.
+     * @param callback The callback to notify app of current software version.
+     */
+    public void getDeviceVersion(DeviceInfoCallback callback) {
+        mDeviceInfoCallback = callback;
+        if (!getDeviceVersion() && mDeviceInfoCallback != null) {
+            mDeviceInfoCallback.onError(BLE_DISCONNECTED_ERROR);
         }
     }
 
@@ -490,7 +532,11 @@ public class AmazonFreeRTOSDevice {
                                 Log.i(TAG, "Default MTU is set to: " + currentMtu.mtu);
                                 try {
                                     mMtu = Integer.parseInt(currentMtu.mtu);
-                                    setMtu(mMtu);
+                                    if (mDeviceInfoCallback != null) {
+                                        mDeviceInfoCallback.onObtainMtu(mMtu);
+                                    } else {
+                                        setMtu(mMtu);
+                                    }
                                 } catch (NumberFormatException e) {
                                     Log.e(TAG, "Cannot parse default MTU value.");
                                 }
@@ -500,12 +546,18 @@ public class AmazonFreeRTOSDevice {
                                 currentEndpoint.brokerEndpoint = new String(responseBytes);
                                 Log.i(TAG, "Current broker endpoint is set to: "
                                         + currentEndpoint.brokerEndpoint);
+                                if (mDeviceInfoCallback != null) {
+                                    mDeviceInfoCallback.onObtainBrokerEndpoint(currentEndpoint.brokerEndpoint);
+                                }
                                 break;
                             case UUID_DEVICE_VERSION_CHARACTERISTIC:
                                 Version currentVersion = new Version();
                                 currentVersion.version = new String(responseBytes);
                                 mAmazonFreeRTOSLibVersion = currentVersion.version;
                                 Log.i(TAG, "Ble software version on device is: " + currentVersion.version);
+                                if (mDeviceInfoCallback != null) {
+                                    mDeviceInfoCallback.onObtainDeviceSoftwareVersion(currentVersion.version);
+                                }
                                 break;
                             default:
                                 Log.w(TAG, "Unknown characteristic read. ");
@@ -866,33 +918,39 @@ public class AmazonFreeRTOSDevice {
         }
     }
 
-    private void getMtu() {
+    private boolean getMtu() {
         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
             Log.d(TAG, "Getting current MTU.");
             sendBleCommand(new BleCommand(BleCommand.CommandType.READ_CHARACTERISTIC,
                     UUID_DEVICE_MTU_CHARACTERISTIC, UUID_DEVICE_INFORMATION_SERVICE));
+            return true;
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
+            return false;
         }
     }
 
-    private void getBrokerEndpoint() {
+    private boolean getBrokerEndpoint() {
         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
             Log.d(TAG, "Getting broker endpoint.");
             sendBleCommand(new BleCommand(BleCommand.CommandType.READ_CHARACTERISTIC,
                     UUID_IOT_ENDPOINT_CHARACTERISTIC, UUID_DEVICE_INFORMATION_SERVICE));
+            return true;
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
+            return false;
         }
     }
 
-    private void getDeviceVersion() {
+    private boolean getDeviceVersion() {
         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
             Log.d(TAG, "Getting ble software version on device.");
             sendBleCommand(new BleCommand(BleCommand.CommandType.READ_CHARACTERISTIC,
                     UUID_DEVICE_VERSION_CHARACTERISTIC, UUID_DEVICE_INFORMATION_SERVICE));
+            return true;
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
+            return false;
         }
     }
 
