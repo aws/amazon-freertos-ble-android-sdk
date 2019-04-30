@@ -23,7 +23,6 @@ import java.util.concurrent.CountDownLatch;
 
 public class AuthenticatorActivity extends AppCompatActivity {
     public static final String EXTRA_DEVICE_MAC = "com.amazonaws.freertosandroid.device_mac";
-    private String mDeviceMac;
     private final static String TAG = "AuthActivity";
     private HandlerThread handlerThread;
     private Handler handler;
@@ -37,7 +36,6 @@ public class AuthenticatorActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_fragment);
-        mDeviceMac = getIntent().getStringExtra(EXTRA_DEVICE_MAC);
         if ( handlerThread == null ) {
             handlerThread = new HandlerThread("SignInThread");
             handlerThread.start();
@@ -68,10 +66,9 @@ public class AuthenticatorActivity extends AppCompatActivity {
         handler.post(new Runnable() {
             @Override
             public void run() {
-                final Intent intent = MqttProxyActivity.newIntent(AuthenticatorActivity.this, mDeviceMac);
                 if (AWSMobileClient.getInstance().isSignedIn()) {
                     signinsuccessful();
-                    startActivity(intent);
+                    finish();
                 } else {
                     AWSMobileClient.getInstance().showSignIn(
                         AuthenticatorActivity.this,
@@ -86,7 +83,7 @@ public class AuthenticatorActivity extends AppCompatActivity {
                                     case SIGNED_IN:
                                         Log.i(TAG, "logged in!");
                                         signinsuccessful();
-                                        startActivity(intent);
+                                        finish();
                                         break;
                                     case SIGNED_OUT:
                                         Log.i(TAG, "onResult: User did not choose to sign-in");

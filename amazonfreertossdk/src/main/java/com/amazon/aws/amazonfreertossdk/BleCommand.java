@@ -29,7 +29,8 @@ public class BleCommand {
         WRITE_CHARACTERISTIC,
         READ_CHARACTERISTIC,
         DISCOVER_SERVICES,
-        REQUEST_MTU
+        REQUEST_MTU,
+        NOTIFICATION
     }
 
     /**

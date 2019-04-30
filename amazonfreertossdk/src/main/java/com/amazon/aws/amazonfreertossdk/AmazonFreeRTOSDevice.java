@@ -35,8 +35,6 @@ import com.amazon.aws.amazonfreertossdk.deviceinfo.Mtu;
 import com.amazon.aws.amazonfreertossdk.deviceinfo.Version;
 import com.amazon.aws.amazonfreertossdk.mqttproxy.Connack;
 import com.amazon.aws.amazonfreertossdk.mqttproxy.Connect;
-import com.amazon.aws.amazonfreertossdk.mqttproxy.MqttProxyControl;
-import com.amazon.aws.amazonfreertossdk.mqttproxy.MqttProxyMessage;
 import com.amazon.aws.amazonfreertossdk.mqttproxy.Puback;
 import com.amazon.aws.amazonfreertossdk.mqttproxy.Publish;
 import com.amazon.aws.amazonfreertossdk.mqttproxy.Suback;
@@ -79,6 +77,9 @@ import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.AMAZONFREERTOS_SDK_VERSION;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.AmazonFreeRTOSError.BLE_DISCONNECTED_ERROR;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.BLE_COMMAND_TIMEOUT;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.DELETE_NETWORK_RESP;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.EDIT_NETWORK_RESP;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.LIST_NETWORK_RESP;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_CONNACK;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_CONNECT;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_DISCONNECT;
@@ -90,31 +91,35 @@ import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_UNSUBSCRIBE;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_PROXY_CONTROL_OFF;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_PROXY_CONTROL_ON;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_DELETE_NETWORK_CHARACTERISTIC;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.SAVE_NETWORK_RESP;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_DEVICE_INFORMATION_SERVICE;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_DEVICE_MTU_CHARACTERISTIC;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_DEVICE_VERSION_CHARACTERISTIC;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_EDIT_NETWORK_CHARACTERISTIC;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_IOT_ENDPOINT_CHARACTERISTIC;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_LIST_NETWORK_CHARACTERISTIC;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_CONTROL_CHARACTERISTIC;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_RXLARGE_CHARACTERISTIC;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_RX_CHARACTERISTIC;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_DEVICE_MTU;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_DEVICE_VERSION;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_IOT_ENDPOINT;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_CONTROL;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_RXLARGE;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_RX;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_SERVICE;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_TX_CHARACTERISTIC;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_TXLARGE;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_TX;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_NETWORK_CONTROL;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_NETWORK_RX;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_NETWORK_RXLARGE;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_NETWORK_SERVICE;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_SAVE_NETWORK_CHARACTERISTIC;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_NETWORK_TXLARGE;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_NETWORK_TX;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.uuidToName;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.BleConnectionState;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MqttConnectionState;
 import static com.amazon.aws.amazonfreertossdk.BleCommand.CommandType.DISCOVER_SERVICES;
+import static com.amazon.aws.amazonfreertossdk.BleCommand.CommandType.NOTIFICATION;
 import static com.amazon.aws.amazonfreertossdk.BleCommand.CommandType.READ_CHARACTERISTIC;
 import static com.amazon.aws.amazonfreertossdk.BleCommand.CommandType.REQUEST_MTU;
 
 public class AmazonFreeRTOSDevice {
 
     private static final String TAG = "AmazonFreeRTOSDevice";
+    private static final boolean VDBG = false;
     private Context mContext;
 
     @Getter
@@ -128,14 +133,18 @@ public class AmazonFreeRTOSDevice {
     private int mMtu = 0;
 
     private Queue<BleCommand> mBleCommandQueue = new LinkedList<>();
+    private Queue<BleCommand> mIncomingQueue = new LinkedList<>();
     private boolean mBleOperationInProgress = false;
+    private boolean mRWinProgress = false;
     private Handler mHandler;
     private HandlerThread mHandlerThread;
     private byte[] mValueWritten;
-    private static Semaphore mutex = new Semaphore(1);
+    private Semaphore mutex = new Semaphore(1);
+    private Semaphore mIncomingMutex = new Semaphore(1);
 
     //Buffer for receiving messages from device
     private ByteArrayOutputStream mTxLargeObject = new ByteArrayOutputStream();
+    private ByteArrayOutputStream mTxLargeNw = new ByteArrayOutputStream();
     //Buffer for sending messages to device.
     private byte[] mRxLargeObject;
     private int mTotalPackets = 0;
@@ -170,6 +179,7 @@ public class AmazonFreeRTOSDevice {
     void disconnect() {
         // If ble connection is lost, clear any pending ble command.
         mBleCommandQueue.clear();
+        mIncomingQueue.clear();
         mMessageId = 0;
         mMtu = 0;
         mTxLargeObject.reset();
@@ -185,14 +195,6 @@ public class AmazonFreeRTOSDevice {
         if (mMqttConnectionState != AmazonFreeRTOSConstants.MqttConnectionState.MQTT_Disconnected) {
             disconnectFromIot();
         }
-    }
-
-    public void enableProxy() {
-        enableMqttProxy(true);
-    }
-
-    public void disableProxy() {
-        enableMqttProxy(false);
     }
 
     /**
@@ -215,10 +217,7 @@ public class AmazonFreeRTOSDevice {
     public void listNetworks(ListNetworkReq listNetworkReq, NetworkConfigCallback callback) {
         mNetworkConfigCallback = callback;
         byte[] listNetworkReqBytes = listNetworkReq.encode();
-        if (listNetworkReqBytes != null) {
-            sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
-                    UUID_LIST_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, listNetworkReqBytes));
-        }
+        sendDataToDevice(UUID_NETWORK_SERVICE, UUID_NETWORK_RX, UUID_NETWORK_RXLARGE, listNetworkReqBytes);
     }
 
     /**
@@ -231,10 +230,7 @@ public class AmazonFreeRTOSDevice {
     public void saveNetwork(SaveNetworkReq saveNetworkReq, NetworkConfigCallback callback) {
         mNetworkConfigCallback = callback;
         byte[] saveNetworkReqBytes = saveNetworkReq.encode();
-        if (saveNetworkReqBytes != null) {
-            sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
-                    UUID_SAVE_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, saveNetworkReqBytes));
-        }
+        sendDataToDevice(UUID_NETWORK_SERVICE, UUID_NETWORK_RX, UUID_NETWORK_RXLARGE, saveNetworkReqBytes);
     }
 
     /**
@@ -250,10 +246,7 @@ public class AmazonFreeRTOSDevice {
     public void editNetwork(EditNetworkReq editNetworkReq, NetworkConfigCallback callback) {
         mNetworkConfigCallback = callback;
         byte[] editNetworkReqBytes = editNetworkReq.encode();
-        if (editNetworkReqBytes != null) {
-            sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
-                    UUID_EDIT_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, editNetworkReqBytes));
-        }
+        sendDataToDevice(UUID_NETWORK_SERVICE, UUID_NETWORK_RX, UUID_NETWORK_RXLARGE, editNetworkReqBytes);
     }
 
     /**
@@ -266,10 +259,7 @@ public class AmazonFreeRTOSDevice {
     public void deleteNetwork(DeleteNetworkReq deleteNetworkReq, NetworkConfigCallback callback) {
         mNetworkConfigCallback = callback;
         byte[] deleteNetworkReqBytes = deleteNetworkReq.encode();
-        if (deleteNetworkReqBytes != null) {
-            sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
-                    UUID_DELETE_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE, deleteNetworkReqBytes));
-        }
+        sendDataToDevice(UUID_NETWORK_SERVICE, UUID_NETWORK_RX, UUID_NETWORK_RXLARGE, deleteNetworkReqBytes);
     }
 
     /**
@@ -336,43 +326,81 @@ public class AmazonFreeRTOSDevice {
         getDeviceVersion();
         getMtu();
         sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_DESCRIPTOR,
-                UUID_MQTT_PROXY_TX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE));
+                UUID_MQTT_PROXY_TX, UUID_MQTT_PROXY_SERVICE));
         sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_DESCRIPTOR,
-                UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE));
+                UUID_MQTT_PROXY_TXLARGE, UUID_MQTT_PROXY_SERVICE));
         sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_DESCRIPTOR,
-                UUID_LIST_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE));
+                UUID_NETWORK_TX, UUID_NETWORK_SERVICE));
         sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_DESCRIPTOR,
-                UUID_SAVE_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE));
-        sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_DESCRIPTOR,
-                UUID_DELETE_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE));
-        sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_DESCRIPTOR,
-                UUID_EDIT_NETWORK_CHARACTERISTIC, UUID_NETWORK_SERVICE));
+                UUID_NETWORK_TXLARGE, UUID_NETWORK_SERVICE));
     }
 
-    /**
-     * Enable or disable MQTT proxy. It sends a BLE command to device to enable/disable MQTT proxy.
-     * The request is sent asynchronously through BLE command. If enable is true, it enables MQTT
-     * proxy. If enable is false, in addition to disable MQTT proxy, it also disconnects the MQTT
-     * connection between the app and AWS IoT.
-     * @param enable A boolean to indicate whether to enable or disable MQTT proxy.
-     */
-    private void enableMqttProxy(final boolean enable) {
-        if (AmazonFreeRTOSManager.getClientKeyStore() == null && AmazonFreeRTOSManager.getCredentialProvider() == null) {
-            Log.e(TAG, "Cannot enable/disable mqtt proxy because Iot credential is not set.");
-            return;
+    private void enableService(final String serviceUuid, final boolean enable) {
+        byte[] ready = new byte[1];
+        if (enable) {
+            ready[0] = 1;
+        } else {
+            ready[0] = 0;
         }
-        Log.i(TAG, (enable ? "Enabling" : "Disabling") + " MQTT Proxy");
+        switch (serviceUuid) {
+            case UUID_NETWORK_SERVICE:
+                Log.i(TAG, (enable ? "Enabling" : "Disabling") + " Wifi provisioning");
+                sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
+                        UUID_NETWORK_CONTROL, UUID_NETWORK_SERVICE, ready));
+                break;
+            case UUID_MQTT_PROXY_SERVICE:
+                if (AmazonFreeRTOSManager.getClientKeyStore() != null ||
+                        AmazonFreeRTOSManager.getCredentialProvider() != null){
+                    Log.i(TAG, (enable ? "Enabling" : "Disabling") + " MQTT Proxy");
+                    sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
+                        UUID_MQTT_PROXY_CONTROL, UUID_MQTT_PROXY_SERVICE, ready));
+                }
+                break;
+            default:
+                Log.w(TAG, "Unknown service. Ignoring.");
+        }
+    }
 
-        MqttProxyControl mqttProxyControl = new MqttProxyControl();
-        mqttProxyControl.proxyState = enable ? MQTT_PROXY_CONTROL_ON : MQTT_PROXY_CONTROL_OFF;
-        byte[] mqttProxyControlBytes = mqttProxyControl.encode();
-        if (mqttProxyControlBytes != null) {
-            sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
-                    UUID_MQTT_PROXY_CONTROL_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE,
-                    mqttProxyControlBytes));
-        }
-        if (!enable) {
-            disconnectFromIot();
+    private void processIncomingQueue() {
+        try {
+            mIncomingMutex.acquire();
+            BleCommand bleCommand = mIncomingQueue.poll();
+            if (bleCommand != null) {
+                Log.d(TAG, "Processing incoming queue. size: " + mIncomingQueue.size());
+                byte[] responseBytes = bleCommand.getData();
+                String cUuid = bleCommand.getCharacteristicUuid();
+                switch (cUuid) {
+                    case UUID_MQTT_PROXY_TX:
+                        handleMqttTxMessage(responseBytes);
+                        break;
+                    case UUID_MQTT_PROXY_TXLARGE:
+                        try {
+                            mTxLargeObject.write(responseBytes);
+                            sendBleCommand(new BleCommand(READ_CHARACTERISTIC,
+                                    UUID_MQTT_PROXY_TXLARGE, UUID_MQTT_PROXY_SERVICE));
+                        } catch (IOException e) {
+                            Log.e(TAG, "Failed to concatenate byte array.", e);
+                        }
+                        break;
+                    case UUID_NETWORK_TX:
+                        handleNwTxMessage(responseBytes);
+                        break;
+                    case UUID_NETWORK_TXLARGE:
+                        try {
+                            mTxLargeNw.write(responseBytes);
+                            sendBleCommand(new BleCommand(READ_CHARACTERISTIC,
+                                    UUID_NETWORK_TXLARGE, UUID_NETWORK_SERVICE));
+                        } catch (IOException e) {
+                            Log.e(TAG, "Failed to concatenate byte array.", e);
+                        }
+                        break;
+                    default:
+                        Log.e(TAG, "Unknown characteristic " + cUuid);
+                }
+            }
+            mIncomingMutex.release();
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Incoming mutex error, ", e);
         }
     }
 
@@ -431,53 +459,14 @@ public class AmazonFreeRTOSDevice {
                     Log.d(TAG, "->->-> Characteristic changed for: "
                             + uuidToName.get(characteristic.getUuid().toString())
                             + " with data: " + bytesToHexString(responseBytes));
+                    BleCommand incomingCommand = new BleCommand(NOTIFICATION,
+                            characteristic.getUuid().toString(),
+                            characteristic.getService().getUuid().toString(), responseBytes);
+                    mIncomingQueue.add(incomingCommand);
 
-                    switch (characteristic.getUuid().toString()) {
-                        case UUID_LIST_NETWORK_CHARACTERISTIC:
-                            ListNetworkResp listNetworkResp = new ListNetworkResp();
-                            if (listNetworkResp.decode(responseBytes) && mNetworkConfigCallback != null) {
-                                Log.d(TAG, listNetworkResp.toString());
-                                mNetworkConfigCallback.onListNetworkResponse(listNetworkResp);
-                            }
-                            break;
-                        case UUID_SAVE_NETWORK_CHARACTERISTIC:
-                            SaveNetworkResp saveNetworkResp = new SaveNetworkResp();
-                            if (saveNetworkResp.decode(responseBytes) && mNetworkConfigCallback != null) {
-                                mNetworkConfigCallback.onSaveNetworkResponse(saveNetworkResp);
-                            }
-                            break;
-                        case UUID_EDIT_NETWORK_CHARACTERISTIC:
-                            EditNetworkResp editNetworkResp = new EditNetworkResp();
-                            if (editNetworkResp.decode(responseBytes) && mNetworkConfigCallback != null) {
-                                mNetworkConfigCallback.onEditNetworkResponse(editNetworkResp);
-                            }
-                            break;
-                        case UUID_DELETE_NETWORK_CHARACTERISTIC:
-                            DeleteNetworkResp deleteNetworkResp = new DeleteNetworkResp();
-                            if (deleteNetworkResp.decode(responseBytes) && mNetworkConfigCallback != null) {
-                                mNetworkConfigCallback.onDeleteNetworkResponse(deleteNetworkResp);
-                            }
-                            break;
-                        case UUID_MQTT_PROXY_CONTROL_CHARACTERISTIC:
-                            Log.i(TAG, "MQTT proxy control characteristic "
-                                    + characteristic.getStringValue(0));
-                            break;
-                        case UUID_MQTT_PROXY_TX_CHARACTERISTIC:
-                            handleMqttTxMessage(responseBytes);
-                            break;
-                        case UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC:
-                            try {
-                                mTxLargeObject.write(responseBytes);
-                                sendBleCommand(new BleCommand(READ_CHARACTERISTIC,
-                                        UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE));
-                            } catch (IOException e) {
-                                Log.e(TAG, "Failed to concatenate byte array.", e);
-                            }
-                            break;
-                        default:
-                            Log.e(TAG, "Unknown characteristic " + characteristic.getUuid());
+                    if (!mRWinProgress) {
+                        processIncomingQueue();
                     }
-
                 }
 
                 @Override
@@ -495,6 +484,8 @@ public class AmazonFreeRTOSDevice {
                     mMtu = mtu;
                     mMaxPayloadLen = mMtu - 3;
                     mMaxPayloadLen = mMaxPayloadLen > 0 ? mMaxPayloadLen : 0;
+                    enableService(UUID_NETWORK_SERVICE, true);
+                    enableService(UUID_MQTT_PROXY_SERVICE, true);
                     mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
                     processNextBleCommand();
                 }
@@ -504,29 +495,48 @@ public class AmazonFreeRTOSDevice {
                 public void onCharacteristicRead(BluetoothGatt gatt,
                                                  BluetoothGattCharacteristic characteristic,
                                                  int status) {
-                    Log.d(TAG, "->->-> onCharacteristicRead status: " + (status == 0 ? "Success" : status));
+                    mRWinProgress = false;
+                    byte[] responseBytes = characteristic.getValue();
+                    Log.d(TAG, "->->-> onCharacteristicRead status: " + (status == 0 ? "Success. " : status)
+                            + bytesToHexString(responseBytes));
                     if (status == BluetoothGatt.GATT_SUCCESS) {
-                        byte[] responseBytes = characteristic.getValue();
                         switch (characteristic.getUuid().toString()) {
-                            case UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC:
+                            case UUID_MQTT_PROXY_TXLARGE:
                                 try {
                                     mTxLargeObject.write(responseBytes);
                                     if (responseBytes.length < mMaxPayloadLen) {
                                         byte[] largeMessage = mTxLargeObject.toByteArray();
-                                        Log.d(TAG, "Large object received from device successfully: "
+                                        Log.d(TAG, "MQTT Large object received from device successfully: "
                                                 + bytesToHexString(largeMessage));
                                         handleMqttTxMessage(largeMessage);
                                         mTxLargeObject.reset();
                                     } else {
                                         sendBleCommand(new BleCommand(READ_CHARACTERISTIC,
-                                                UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE));
+                                                UUID_MQTT_PROXY_TXLARGE, UUID_MQTT_PROXY_SERVICE));
                                     }
                                 } catch (IOException e) {
                                     Log.e(TAG, "Failed to concatenate byte array.", e);
                                 }
                                 //broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
                                 break;
-                            case UUID_DEVICE_MTU_CHARACTERISTIC:
+                            case UUID_NETWORK_TXLARGE:
+                                try {
+                                    mTxLargeNw.write(responseBytes);
+                                    if (responseBytes.length < mMaxPayloadLen) {
+                                        byte[] largeMessage = mTxLargeNw.toByteArray();
+                                        Log.d(TAG, "NW Large object received from device successfully: "
+                                                + bytesToHexString(largeMessage));
+                                        handleNwTxMessage(largeMessage);
+                                        mTxLargeNw.reset();
+                                    } else {
+                                        sendBleCommand(new BleCommand(READ_CHARACTERISTIC,
+                                                UUID_NETWORK_TXLARGE, UUID_NETWORK_SERVICE));
+                                    }
+                                } catch (IOException e) {
+                                    Log.e(TAG, "Failed to concatenate byte array.", e);
+                                }
+                                break;
+                            case UUID_DEVICE_MTU:
                                 Mtu currentMtu = new Mtu();
                                 currentMtu.mtu = new String(responseBytes);
                                 Log.i(TAG, "Default MTU is set to: " + currentMtu.mtu);
@@ -541,7 +551,7 @@ public class AmazonFreeRTOSDevice {
                                     Log.e(TAG, "Cannot parse default MTU value.");
                                 }
                                 break;
-                            case UUID_IOT_ENDPOINT_CHARACTERISTIC:
+                            case UUID_IOT_ENDPOINT:
                                 BrokerEndpoint currentEndpoint = new BrokerEndpoint();
                                 currentEndpoint.brokerEndpoint = new String(responseBytes);
                                 Log.i(TAG, "Current broker endpoint is set to: "
@@ -550,7 +560,7 @@ public class AmazonFreeRTOSDevice {
                                     mDeviceInfoCallback.onObtainBrokerEndpoint(currentEndpoint.brokerEndpoint);
                                 }
                                 break;
-                            case UUID_DEVICE_VERSION_CHARACTERISTIC:
+                            case UUID_DEVICE_VERSION:
                                 Version currentVersion = new Version();
                                 currentVersion.version = new String(responseBytes);
                                 mAmazonFreeRTOSLibVersion = currentVersion.version;
@@ -563,6 +573,7 @@ public class AmazonFreeRTOSDevice {
                                 Log.w(TAG, "Unknown characteristic read. ");
                         }
                     }
+                    processIncomingQueue();
                     processNextBleCommand();
                 }
 
@@ -570,11 +581,13 @@ public class AmazonFreeRTOSDevice {
                 public void onCharacteristicWrite(BluetoothGatt gatt,
                                                   BluetoothGattCharacteristic characteristic,
                                                   int status) {
+                    mRWinProgress = false;
                     byte[] value = characteristic.getValue();
                     Log.d(TAG, "onCharacteristicWrite for: "
                             + uuidToName.get(characteristic.getUuid().toString())
                             + "; status: " + (status == 0 ? "Success" : status) + "; value: " + bytesToHexString(value));
                     if (Arrays.equals(mValueWritten, value)) {
+                        processIncomingQueue();
                         processNextBleCommand();
                     } else {
                         Log.e(TAG, "values don't match!");
@@ -584,16 +597,16 @@ public class AmazonFreeRTOSDevice {
 
 
     /**
-     * Handle MQTT related messages received from device.
+     * Handle mqtt messages received from device.
      * @param message message received from device.
      */
     private void handleMqttTxMessage(byte[] message) {
-        MqttProxyMessage mqttProxyMessage = new MqttProxyMessage();
-        if (!mqttProxyMessage.decode(message)) {
+        MessageType messageType = new MessageType();
+        if (!messageType.decode(message)) {
             return;
         }
-        Log.i(TAG, "Handling Mqtt Message type : " + mqttProxyMessage.type);
-        switch (mqttProxyMessage.type) {
+        Log.i(TAG, "Handling Mqtt Message type : " + messageType.type);
+        switch (messageType.type) {
             case MQTT_MSG_CONNECT:
                 final Connect connect = new Connect();
                 if (connect.decode(message)) {
@@ -652,7 +665,44 @@ public class AmazonFreeRTOSDevice {
                 }
                 break;
             default:
-                Log.e(TAG, "Unknown mqtt message type: " + mqttProxyMessage.type);
+                Log.e(TAG, "Unknown mqtt message type: " + messageType.type);
+        }
+    }
+
+    private void handleNwTxMessage(byte[] message) {
+        MessageType messageType = new MessageType();
+        if (!messageType.decode(message)) {
+            return;
+        }
+        Log.i(TAG, "Handling Network Message type : " + messageType.type);
+        switch (messageType.type) {
+            case LIST_NETWORK_RESP:
+                ListNetworkResp listNetworkResp = new ListNetworkResp();
+                if (listNetworkResp.decode(message) && mNetworkConfigCallback != null) {
+                    Log.d(TAG, listNetworkResp.toString());
+                    mNetworkConfigCallback.onListNetworkResponse(listNetworkResp);
+                }
+                break;
+            case SAVE_NETWORK_RESP:
+                SaveNetworkResp saveNetworkResp = new SaveNetworkResp();
+                if (saveNetworkResp.decode(message) && mNetworkConfigCallback != null) {
+                    mNetworkConfigCallback.onSaveNetworkResponse(saveNetworkResp);
+                }
+                break;
+            case EDIT_NETWORK_RESP:
+                EditNetworkResp editNetworkResp = new EditNetworkResp();
+                if (editNetworkResp.decode(message) && mNetworkConfigCallback != null) {
+                    mNetworkConfigCallback.onEditNetworkResponse(editNetworkResp);
+                }
+                break;
+            case DELETE_NETWORK_RESP:
+                DeleteNetworkResp deleteNetworkResp = new DeleteNetworkResp();
+                if (deleteNetworkResp.decode(message) && mNetworkConfigCallback != null) {
+                    mNetworkConfigCallback.onDeleteNetworkResponse(deleteNetworkResp);
+                }
+                break;
+            default:
+                Log.e(TAG, "Unknown network message type: " + messageType.type);
         }
     }
 
@@ -761,36 +811,6 @@ public class AmazonFreeRTOSDevice {
         }
     }
 
-    private void sendConnAck() {
-        Connack connack = new Connack();
-        connack.type = MQTT_MSG_CONNACK;
-        connack.status = AmazonFreeRTOSConstants.MqttConnectionState.MQTT_Connected.ordinal();
-        byte[] connackBytes = connack.encode();
-        if (connackBytes != null) {
-            sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
-                    UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE,
-                    connackBytes));
-        }
-    }
-
-    private void sendSubAck(final Subscribe subscribe) {
-        if (mBleConnectionState != BleConnectionState.BLE_CONNECTED) {
-            Log.e(TAG, "Cannot send SUB ACK to BLE device because BLE connection state" +
-                    " is not connected");
-            return;
-        }
-        Log.i(TAG, "Sending SUB ACK back to device.");
-        Suback suback = new Suback();
-        suback.type = MQTT_MSG_SUBACK;
-        suback.msgID = subscribe.msgID;
-        suback.status = subscribe.qoSs.get(0);
-        byte[] subackBytes = suback.encode();
-        if (subackBytes != null) {
-            sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
-                    UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, subackBytes));
-        }
-    }
-
     private void unsubscribeToIoT(final Unsubscribe unsubscribe) {
         if (mMqttConnectionState != AmazonFreeRTOSConstants.MqttConnectionState.MQTT_Connected) {
             Log.e(TAG, "Cannot unsubscribe because mqtt state is not connected.");
@@ -805,23 +825,6 @@ public class AmazonFreeRTOSDevice {
             } catch(Exception e){
                 Log.e(TAG, "Unsubscribe error.", e);
             }
-        }
-    }
-
-    private void sendUnsubAck(final Unsubscribe unsubscribe) {
-        if (mBleConnectionState != BleConnectionState.BLE_CONNECTED) {
-            Log.e(TAG, "Cannot send Unsub ACK to BLE device because BLE connection state" +
-                    " is not connected");
-            return;
-        }
-        Log.i(TAG, "Sending Unsub ACK back to device.");
-        Unsuback unsuback = new Unsuback();
-        unsuback.type = MQTT_MSG_UNSUBACK;
-        unsuback.msgID = unsubscribe.msgID;
-        byte[] unsubackBytes = unsuback.encode();
-        if (unsubackBytes != null) {
-            sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
-                    UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, unsubackBytes));
         }
     }
 
@@ -852,6 +855,43 @@ public class AmazonFreeRTOSDevice {
         }
     }
 
+    private void sendConnAck() {
+        Connack connack = new Connack();
+        connack.type = MQTT_MSG_CONNACK;
+        connack.status = AmazonFreeRTOSConstants.MqttConnectionState.MQTT_Connected.ordinal();
+        byte[] connackBytes = connack.encode();
+        sendDataToDevice(UUID_MQTT_PROXY_SERVICE, UUID_MQTT_PROXY_RX, UUID_MQTT_PROXY_RXLARGE, connackBytes);
+    }
+
+    private void sendSubAck(final Subscribe subscribe) {
+        if (mBleConnectionState != BleConnectionState.BLE_CONNECTED) {
+            Log.e(TAG, "Cannot send SUB ACK to BLE device because BLE connection state" +
+                    " is not connected");
+            return;
+        }
+        Log.i(TAG, "Sending SUB ACK back to device.");
+        Suback suback = new Suback();
+        suback.type = MQTT_MSG_SUBACK;
+        suback.msgID = subscribe.msgID;
+        suback.status = subscribe.qoSs.get(0);
+        byte[] subackBytes = suback.encode();
+        sendDataToDevice(UUID_MQTT_PROXY_SERVICE, UUID_MQTT_PROXY_RX, UUID_MQTT_PROXY_RXLARGE, subackBytes);
+    }
+
+    private void sendUnsubAck(final Unsubscribe unsubscribe) {
+        if (mBleConnectionState != BleConnectionState.BLE_CONNECTED) {
+            Log.e(TAG, "Cannot send Unsub ACK to BLE device because BLE connection state" +
+                    " is not connected");
+            return;
+        }
+        Log.i(TAG, "Sending Unsub ACK back to device.");
+        Unsuback unsuback = new Unsuback();
+        unsuback.type = MQTT_MSG_UNSUBACK;
+        unsuback.msgID = unsubscribe.msgID;
+        byte[] unsubackBytes = unsuback.encode();
+        sendDataToDevice(UUID_MQTT_PROXY_SERVICE, UUID_MQTT_PROXY_RX, UUID_MQTT_PROXY_RXLARGE, unsubackBytes);
+    }
+
     private void sendPubAck(final Publish publish) {
         if (mBleConnectionState != BleConnectionState.BLE_CONNECTED) {
             Log.e(TAG, "Cannot send PUB ACK to BLE device because BLE connection state" +
@@ -863,10 +903,7 @@ public class AmazonFreeRTOSDevice {
         puback.type = MQTT_MSG_PUBACK;
         puback.msgID = publish.getMsgID();
         byte[] pubackBytes = puback.encode();
-        if (pubackBytes != null) {
-            sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
-                    UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, pubackBytes));
-        }
+        sendDataToDevice(UUID_MQTT_PROXY_SERVICE, UUID_MQTT_PROXY_RX, UUID_MQTT_PROXY_RXLARGE, pubackBytes);
     }
 
     private void publishToDevice(final Publish publish) {
@@ -879,26 +916,7 @@ public class AmazonFreeRTOSDevice {
                 + " payload bytes: " + bytesToHexString(publish.getPayload())
                 + " MsgID: " + publish.getMsgID());
         byte[] publishBytes = publish.encode();
-        if (publishBytes != null) {
-            if (publishBytes.length < mMaxPayloadLen) {
-                sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
-                        UUID_MQTT_PROXY_RX_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, publishBytes));
-            } else {
-                mTotalPackets = publishBytes.length / mMaxPayloadLen + 1;
-                Log.i(TAG, "This message is larger than max payload size: " + mMaxPayloadLen
-                        + ". Breaking down to " + mTotalPackets + " packets.");
-                mPacketCount = 0; //reset packet count
-                mRxLargeObject = Arrays.copyOf(publishBytes, publishBytes.length);
-                while (mMaxPayloadLen * mPacketCount <= mRxLargeObject.length) {
-                    byte[] packet = Arrays.copyOfRange(mRxLargeObject, mMaxPayloadLen * mPacketCount,
-                            Math.min(mRxLargeObject.length, mMaxPayloadLen * mPacketCount + mMaxPayloadLen));
-                    mPacketCount++;
-                    Log.d(TAG, "Packet #" + mPacketCount + ": " + bytesToHexString(packet));
-                    sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
-                            UUID_MQTT_PROXY_RXLARGE_CHARACTERISTIC, UUID_MQTT_PROXY_SERVICE, packet));
-                }
-            }
-        }
+        sendDataToDevice(UUID_MQTT_PROXY_SERVICE, UUID_MQTT_PROXY_RX, UUID_MQTT_PROXY_RXLARGE, publishBytes);
     }
 
     private void discoverServices() {
@@ -922,7 +940,7 @@ public class AmazonFreeRTOSDevice {
         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
             Log.d(TAG, "Getting current MTU.");
             sendBleCommand(new BleCommand(BleCommand.CommandType.READ_CHARACTERISTIC,
-                    UUID_DEVICE_MTU_CHARACTERISTIC, UUID_DEVICE_INFORMATION_SERVICE));
+                    UUID_DEVICE_MTU, UUID_DEVICE_INFORMATION_SERVICE));
             return true;
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
@@ -934,7 +952,7 @@ public class AmazonFreeRTOSDevice {
         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
             Log.d(TAG, "Getting broker endpoint.");
             sendBleCommand(new BleCommand(BleCommand.CommandType.READ_CHARACTERISTIC,
-                    UUID_IOT_ENDPOINT_CHARACTERISTIC, UUID_DEVICE_INFORMATION_SERVICE));
+                    UUID_IOT_ENDPOINT, UUID_DEVICE_INFORMATION_SERVICE));
             return true;
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
@@ -946,11 +964,34 @@ public class AmazonFreeRTOSDevice {
         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
             Log.d(TAG, "Getting ble software version on device.");
             sendBleCommand(new BleCommand(BleCommand.CommandType.READ_CHARACTERISTIC,
-                    UUID_DEVICE_VERSION_CHARACTERISTIC, UUID_DEVICE_INFORMATION_SERVICE));
+                    UUID_DEVICE_VERSION, UUID_DEVICE_INFORMATION_SERVICE));
             return true;
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
             return false;
+        }
+    }
+
+    private void sendDataToDevice(final String service, final String rx, final String rxlarge, byte[] data) {
+        if (data != null) {
+            if (data.length < mMaxPayloadLen) {
+                sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
+                        rx, service, data));
+            } else {
+                mTotalPackets = data.length / mMaxPayloadLen + 1;
+                Log.i(TAG, "This message is larger than max payload size: " + mMaxPayloadLen
+                        + ". Breaking down to " + mTotalPackets + " packets.");
+                mPacketCount = 0; //reset packet count
+                mRxLargeObject = Arrays.copyOf(data, data.length);
+                while (mMaxPayloadLen * mPacketCount <= mRxLargeObject.length) {
+                    byte[] packet = Arrays.copyOfRange(mRxLargeObject, mMaxPayloadLen * mPacketCount,
+                            Math.min(mRxLargeObject.length, mMaxPayloadLen * mPacketCount + mMaxPayloadLen));
+                    mPacketCount++;
+                    Log.d(TAG, "Packet #" + mPacketCount + ": " + bytesToHexString(packet));
+                    sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
+                            rxlarge, service, packet));
+                }
+            }
         }
     }
 
@@ -1025,7 +1066,7 @@ public class AmazonFreeRTOSDevice {
     private Runnable resetOperationInProgress = new Runnable() {
         @Override
         public void run() {
-            Log.w(TAG, "Ble command failed to be sent OR timeout after " + BLE_COMMAND_TIMEOUT + "ms");
+            Log.e(TAG, "Ble command failed to be sent OR timeout after " + BLE_COMMAND_TIMEOUT + "ms");
             // If current ble command timed out, process the next ble command.
             processNextBleCommand();
         }
@@ -1063,8 +1104,10 @@ public class AmazonFreeRTOSDevice {
             mValueWritten = value;
             characteristic.setValue(value);
             if(!mBluetoothGatt.writeCharacteristic(characteristic)) {
+                mRWinProgress = false;
                 Log.e(TAG, "Failed to write characteristic.");
             } else {
+                mRWinProgress = true;
                 return true;
             }
         }
@@ -1092,8 +1135,10 @@ public class AmazonFreeRTOSDevice {
         if (characteristic != null) {
             Log.d(TAG, "<-<-<- Reading from characteristic: " + uuidToName.get(characteristicUuid));
             if (!mBluetoothGatt.readCharacteristic(characteristic)) {
+                mRWinProgress = false;
                 Log.e(TAG, "Failed to read characteristic.");
             } else {
+                mRWinProgress = true;
                 return true;
             }
         }
@@ -1124,7 +1169,9 @@ public class AmazonFreeRTOSDevice {
         Formatter formatter = new Formatter(sb);
         for (int i =0; i< bytes.length; i++) {
             formatter.format("%02x", bytes[i]);
-            if (i > 10) break;
+            if (!VDBG && i > 10) {
+                break;
+            }
         }
         return sb.toString();
     }

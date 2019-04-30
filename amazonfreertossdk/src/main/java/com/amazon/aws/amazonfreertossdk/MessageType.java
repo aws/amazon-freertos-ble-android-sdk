@@ -13,7 +13,7 @@
  * permissions and limitations under the License.
  */
 
-package com.amazon.aws.amazonfreertossdk.mqttproxy;
+package com.amazon.aws.amazonfreertossdk;
 
 import android.util.Log;
 
@@ -28,10 +28,10 @@ import co.nstant.in.cbor.model.UnicodeString;
 import co.nstant.in.cbor.model.UnsignedInteger;
 
 /**
- * This class represents the MQTT message type.
+ * This class represents the message type.
  */
-public class MqttProxyMessage {
-    private static final String TAG = "MqttProxyMessage";
+public class MessageType {
+    private static final String TAG = "MessageType";
     private static final String TYPE_KEY = "w";
     /**
      * MQTT message type.

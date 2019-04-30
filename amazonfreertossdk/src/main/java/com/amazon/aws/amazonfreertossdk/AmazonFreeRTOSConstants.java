@@ -22,7 +22,7 @@ import java.util.Map;
  * This class defines some constants used in the SDK.
  */
 public class AmazonFreeRTOSConstants {
-    public static final String AMAZONFREERTOS_SDK_VERSION = "0.9.3";
+    public static final String AMAZONFREERTOS_SDK_VERSION = "0.9.4";
 
     /**
      * Network security types.
@@ -40,7 +40,7 @@ public class AmazonFreeRTOSConstants {
     public static final int MQTT_PROXY_CONTROL_ON = 1;
 
     /**
-     * MQTT message type.
+     * message type.
      */
     public static final int MQTT_MSG_CONNECT = 1;
     public static final int MQTT_MSG_CONNACK = 2;
@@ -56,6 +56,15 @@ public class AmazonFreeRTOSConstants {
     public static final int MQTT_MSG_PINGREQ = 12;
     public static final int MQTT_MSG_PINGRESP = 13;
     public static final int MQTT_MSG_DISCONNECT = 14;
+
+    public static final int LIST_NETWORK_REQ = 1;
+    public static final int LIST_NETWORK_RESP = 2;
+    public static final int SAVE_NETWORK_REQ = 3;
+    public static final int SAVE_NETWORK_RESP = 4;
+    public static final int EDIT_NETWORK_REQ = 5;
+    public static final int EDIT_NETWORK_RESP = 6;
+    public static final int DELETE_NETWORK_REQ = 7;
+    public static final int DELETE_NETWORK_RESP = 8;
 
     /**
      * Bluetooth connection state. This is matching with BluetoothProfile in the Android SDK.
@@ -97,38 +106,41 @@ public class AmazonFreeRTOSConstants {
     public static final int BLE_COMMAND_TIMEOUT = 3000; //ms
 
     public static final String UUID_AmazonFreeRTOS = "8a7f1168-48af-4efb-83b5-e679f932ff00";
-    public static final String UUID_NETWORK_SERVICE = "3113a187-4b9f-4f9a-aa83-c614e11bff00";
-    public static final String UUID_LIST_NETWORK_CHARACTERISTIC = "3113a187-4b9f-4f9a-aa83-c614e11bff01";
-    public static final String UUID_SAVE_NETWORK_CHARACTERISTIC = "3113a187-4b9f-4f9a-aa83-c614e11bff02";
-    public static final String UUID_EDIT_NETWORK_CHARACTERISTIC = "3113a187-4b9f-4f9a-aa83-c614e11bff03";
-    public static final String UUID_DELETE_NETWORK_CHARACTERISTIC = "3113a187-4b9f-4f9a-aa83-c614e11bff04";
 
-    public static final String UUID_MQTT_PROXY_SERVICE = "a9d7166a-d72e-40a9-a002-48044cc3ff00";
-    public static final String UUID_MQTT_PROXY_CONTROL_CHARACTERISTIC = "a9d7166a-d72e-40a9-a002-48044cc3ff01";
-    public static final String UUID_MQTT_PROXY_TX_CHARACTERISTIC = "a9d7166a-d72e-40a9-a002-48044cc3ff02";
-    public static final String UUID_MQTT_PROXY_RX_CHARACTERISTIC = "a9d7166a-d72e-40a9-a002-48044cc3ff03";
-    public static final String UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC = "a9d7166a-d72e-40a9-a002-48044cc3ff04";
-    public static final String UUID_MQTT_PROXY_RXLARGE_CHARACTERISTIC = "a9d7166a-d72e-40a9-a002-48044cc3ff05";
+    public static final String UUID_NETWORK_SERVICE = "a9d7166a-d72e-40a9-a002-48044cc30100";
+    public static final String UUID_NETWORK_CONTROL = "a9d7166a-d72e-40a9-a002-48044cc30101";
+    public static final String UUID_NETWORK_TX = "a9d7166a-d72e-40a9-a002-48044cc30102";
+    public static final String UUID_NETWORK_RX = "a9d7166a-d72e-40a9-a002-48044cc30103";
+    public static final String UUID_NETWORK_TXLARGE = "a9d7166a-d72e-40a9-a002-48044cc30104";
+    public static final String UUID_NETWORK_RXLARGE = "a9d7166a-d72e-40a9-a002-48044cc30105";
+
+    public static final String UUID_MQTT_PROXY_SERVICE = "a9d7166a-d72e-40a9-a002-48044cc30000";
+    public static final String UUID_MQTT_PROXY_CONTROL = "a9d7166a-d72e-40a9-a002-48044cc30001";
+    public static final String UUID_MQTT_PROXY_TX = "a9d7166a-d72e-40a9-a002-48044cc30002";
+    public static final String UUID_MQTT_PROXY_RX = "a9d7166a-d72e-40a9-a002-48044cc30003";
+    public static final String UUID_MQTT_PROXY_TXLARGE = "a9d7166a-d72e-40a9-a002-48044cc30004";
+    public static final String UUID_MQTT_PROXY_RXLARGE = "a9d7166a-d72e-40a9-a002-48044cc30005";
 
     public static final String UUID_DEVICE_INFORMATION_SERVICE = "8a7f1168-48af-4efb-83b5-e679f932ff00";
-    public static final String UUID_DEVICE_VERSION_CHARACTERISTIC = "8a7f1168-48af-4efb-83b5-e679f932ff01";
-    public static final String UUID_IOT_ENDPOINT_CHARACTERISTIC = "8a7f1168-48af-4efb-83b5-e679f932ff02";
-    public static final String UUID_DEVICE_MTU_CHARACTERISTIC = "8a7f1168-48af-4efb-83b5-e679f932ff03";
+    public static final String UUID_DEVICE_VERSION = "8a7f1168-48af-4efb-83b5-e679f932ff01";
+    public static final String UUID_IOT_ENDPOINT = "8a7f1168-48af-4efb-83b5-e679f932ff02";
+    public static final String UUID_DEVICE_MTU = "8a7f1168-48af-4efb-83b5-e679f932ff03";
 
     public static final Map<String, String> uuidToName = new HashMap<String, String>() {
         {
-            put(UUID_LIST_NETWORK_CHARACTERISTIC, "LIST_NETWORK");
-            put(UUID_EDIT_NETWORK_CHARACTERISTIC, "EDIT_NETWORK");
-            put(UUID_SAVE_NETWORK_CHARACTERISTIC, "SAVE_NETWORK");
-            put(UUID_DELETE_NETWORK_CHARACTERISTIC, "DELETE_NETWORK");
-            put(UUID_MQTT_PROXY_CONTROL_CHARACTERISTIC, "MQTT_CONTROL");
-            put(UUID_MQTT_PROXY_TX_CHARACTERISTIC, "MQTT_TX");
-            put(UUID_MQTT_PROXY_TXLARGE_CHARACTERISTIC, "MQTT_TXLARGE");
-            put(UUID_MQTT_PROXY_RX_CHARACTERISTIC, "MQTT_RX");
-            put(UUID_MQTT_PROXY_RXLARGE_CHARACTERISTIC, "MQTT_RXLARGE");
-            put(UUID_DEVICE_VERSION_CHARACTERISTIC, "DEVICE_VERSION");
-            put(UUID_IOT_ENDPOINT_CHARACTERISTIC, "IOT_ENDPOINT");
-            put(UUID_DEVICE_MTU_CHARACTERISTIC, "DEVICE_MTU");
+            put(UUID_NETWORK_CONTROL, "NETWORK_CONTROL");
+            put(UUID_NETWORK_TX, "NETWORK_TX");
+            put(UUID_NETWORK_RX, "NETWORK_RX");
+            put(UUID_NETWORK_TXLARGE, "NETWORK_TXLARGE");
+            put(UUID_NETWORK_RXLARGE, "NETWORK_RXLARGE");
+            put(UUID_MQTT_PROXY_CONTROL, "MQTT_CONTROL");
+            put(UUID_MQTT_PROXY_TX, "MQTT_TX");
+            put(UUID_MQTT_PROXY_TXLARGE, "MQTT_TXLARGE");
+            put(UUID_MQTT_PROXY_RX, "MQTT_RX");
+            put(UUID_MQTT_PROXY_RXLARGE, "MQTT_RXLARGE");
+            put(UUID_DEVICE_VERSION, "DEVICE_VERSION");
+            put(UUID_IOT_ENDPOINT, "IOT_ENDPOINT");
+            put(UUID_DEVICE_MTU, "DEVICE_MTU");
         }
     };
 

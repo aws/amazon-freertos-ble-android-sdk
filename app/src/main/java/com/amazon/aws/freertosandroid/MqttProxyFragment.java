@@ -45,9 +45,9 @@ public class MqttProxyFragment extends Fragment {
                 Log.i(TAG, "mqtt proxy switch isChecked: " + (isChecked ? "ON":"OFF"));
                 if (mDevice != null) {
                     if (isChecked) {
-                        mDevice.enableProxy();
+                        //mDevice.enableProxy();
                     } else {
-                        mDevice.disableProxy();
+                        //mDevice.disableProxy();
                     }
                 } else {
                     Log.e(TAG, "There's no connected device: " + mDeviceMac);

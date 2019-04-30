@@ -23,6 +23,8 @@ import co.nstant.in.cbor.CborBuilder;
 import co.nstant.in.cbor.CborEncoder;
 import co.nstant.in.cbor.CborException;
 
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.DELETE_NETWORK_REQ;
+
 /**
  * Delete network request.
  */
@@ -34,6 +36,7 @@ public class DeleteNetworkReq {
 
     private static final String TAG = "DeleteNetworkRequest";
     private static final String INDEX_KEY = "g";
+    private static final String TYPE_KEY = "w";
 
     public byte[] encode() {
         byte[] DeleteNetworkRequestBytes = null;
@@ -41,6 +44,7 @@ public class DeleteNetworkReq {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             new CborEncoder(baos).encode(new CborBuilder()
                     .addMap()
+                    .put(TYPE_KEY, DELETE_NETWORK_REQ)
                     .put(INDEX_KEY, index)
                     .end()
                     .build());

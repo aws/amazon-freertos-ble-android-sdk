@@ -23,6 +23,8 @@ import co.nstant.in.cbor.CborBuilder;
 import co.nstant.in.cbor.CborEncoder;
 import co.nstant.in.cbor.CborException;
 
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.EDIT_NETWORK_REQ;
+
 /**
  * Edit network request
  */
@@ -39,6 +41,7 @@ public class EditNetworkReq {
     private static final String TAG = "EditNetworkRequest";
     private static final String INDEX_KEY = "g";
     private static final String NEWINDEX_KEY = "j";
+    private static final String TYPE_KEY = "w";
 
     public byte[] encode() {
         byte[] EditNetworkRequestBytes = null;
@@ -46,6 +49,7 @@ public class EditNetworkReq {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             new CborEncoder(baos).encode(new CborBuilder()
                     .addMap()
+                    .put(TYPE_KEY, EDIT_NETWORK_REQ)
                     .put(INDEX_KEY, index)
                     .put(NEWINDEX_KEY, newIndex)
                     .end()

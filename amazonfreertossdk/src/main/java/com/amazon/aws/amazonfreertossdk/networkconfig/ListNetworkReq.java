@@ -23,6 +23,8 @@ import co.nstant.in.cbor.CborBuilder;
 import co.nstant.in.cbor.CborEncoder;
 import co.nstant.in.cbor.CborException;
 
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.LIST_NETWORK_REQ;
+
 /**
  * List network request
  */
@@ -39,6 +41,7 @@ public class ListNetworkReq {
     private static final String TAG = "ListNetworkRequest";
     private static final String MAXNETWORKS_KEY = "h";
     private static final String TIMEOUT_KEY = "t";
+    private static final String TYPE_KEY = "w";
 
     public byte[] encode() {
         byte[] ListNetworkRequestBytes = null;
@@ -46,6 +49,7 @@ public class ListNetworkReq {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             new CborEncoder(baos).encode(new CborBuilder()
                     .addMap()
+                    .put(TYPE_KEY, LIST_NETWORK_REQ)
                     .put(MAXNETWORKS_KEY, maxNetworks)
                     .put(TIMEOUT_KEY, timeout)
                     .end()

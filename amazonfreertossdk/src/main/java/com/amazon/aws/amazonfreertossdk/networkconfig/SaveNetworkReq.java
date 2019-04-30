@@ -23,6 +23,8 @@ import co.nstant.in.cbor.CborBuilder;
 import co.nstant.in.cbor.CborEncoder;
 import co.nstant.in.cbor.CborException;
 
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.SAVE_NETWORK_REQ;
+
 /**
  * Save network request.
  */
@@ -54,6 +56,7 @@ public class SaveNetworkReq {
     private static final String BSSID_KEY = "b";
     private static final String PSK_KEY = "m";
     private static final String SECURITY_KEY = "q";
+    private static final String TYPE_KEY = "w";
 
     public byte[] encode() {
         byte[] SaveNetworkRequestBytes = null;
@@ -61,6 +64,7 @@ public class SaveNetworkReq {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             new CborEncoder(baos).encode(new CborBuilder()
                     .addMap()
+                    .put(TYPE_KEY, SAVE_NETWORK_REQ)
                     .put(INDEX_KEY, index)
                     .put(SSID_KEY, ssid)
                     .put(BSSID_KEY, bssid)

@@ -18,6 +18,7 @@ package com.amazon.aws.amazonfreertossdk.networkconfig;
 import android.util.Log;
 
 import java.io.ByteArrayInputStream;
+import java.util.Formatter;
 import java.util.List;
 
 import co.nstant.in.cbor.CborDecoder;
@@ -83,7 +84,7 @@ public class ListNetworkResp {
 
     public String toString() {
         return String.format("List network response -> Status: %d ssid: %s bssid: %s security: %d hidden: %s" +
-                        " rssi: %d connected: %s index: %d", status, ssid, new String(bssid), security,
+                        " rssi: %d connected: %s index: %d", status, ssid, bytesToHexString(bssid), security,
                 hidden ? "true":"false", rssi, connected ? "true":"false", index);
     }
 
@@ -116,5 +117,16 @@ public class ListNetworkResp {
         } catch (IndexOutOfBoundsException e) {
             return false;
         }
+    }
+
+    private static String bytesToHexString(byte[] bytes) {
+        StringBuilder sb = new StringBuilder(bytes.length * 2);
+        Formatter formatter = new Formatter(sb);
+        for (int i =0; i< bytes.length; i++) {
+            formatter.format("%02x", bytes[i]);
+            if(i < bytes.length -1)
+                formatter.format(":");
+        }
+        return sb.toString();
     }
 }
