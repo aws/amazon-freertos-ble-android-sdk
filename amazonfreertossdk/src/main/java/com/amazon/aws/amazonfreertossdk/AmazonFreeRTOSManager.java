@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import lombok.Getter;
 import lombok.NonNull;
 
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.*;
@@ -60,11 +59,6 @@ public class AmazonFreeRTOSManager {
 
     private BleScanResultCallback mBleScanResultCallback;
 
-    @Getter
-    private static AWSCredentialsProvider credentialProvider;
-    @Getter
-    private static KeyStore clientKeyStore;
-
     /**
      * Construct an AmazonFreeRTOSManager instance.
      * @param context The app context. Should be passed in by the app that creates a new instance
@@ -72,41 +66,8 @@ public class AmazonFreeRTOSManager {
      * @param bluetoothAdapter BluetoothAdaptor passed in by the app.
      */
     public AmazonFreeRTOSManager(Context context, BluetoothAdapter bluetoothAdapter) {
-        this(context, bluetoothAdapter, null, null);
-    }
-
-    /**
-     * Construct an AmazonFreeRTOSManager instance.
-     * @param context The app context. Should be passed in by the app that creates a new instance
-     *                of AmazonFreeRTOSManager.
-     * @param bluetoothAdapter BluetoothAdaptor passed in by the app.
-     * @param cp AWS credential for connection to AWS IoT. If null is passed in,
-     *                            then it will not be able to do MQTT proxy over BLE as it cannot
-     *                            connect to AWS IoT.
-     */
-    public AmazonFreeRTOSManager(Context context, BluetoothAdapter bluetoothAdapter,
-                                 AWSCredentialsProvider cp) {
-        this(context, bluetoothAdapter, cp, null);
-    }
-
-    /**
-     * Construct an AmazonFreeRTOSManager instance.
-     * @param context The app context. Should be passed in by the app that creates a new instance
-     *                of AmazonFreeRTOSManager.
-     * @param bluetoothAdapter BluetoothAdaptor passed in by the app.
-     * @param ks the KeyStore which contains the certificate used to connect to AWS IoT.
-     */
-    public AmazonFreeRTOSManager(Context context, BluetoothAdapter bluetoothAdapter,
-                                 KeyStore ks) {
-        this(context, bluetoothAdapter, null, ks);
-    }
-
-    private AmazonFreeRTOSManager(Context context, BluetoothAdapter bluetoothAdapter,
-                                  AWSCredentialsProvider cp, KeyStore ks) {
         mContext = context;
         mBluetoothAdapter = bluetoothAdapter;
-        credentialProvider = cp;
-        clientKeyStore = ks;
     }
 
     /**
@@ -210,19 +171,52 @@ public class AmazonFreeRTOSManager {
         }
     };
 
+    /**
+     * Connect to the BLE device, and notify the connection state via BleConnectionStatusCallback.
+     * @param connectionStatusCallback The callback to notify app whether the BLE connection is
+     *                                 successful. Must not be null.
+     * @param btDevice the BLE device to be connected to.
+     * @param cp the AWSCredential used to connect to AWS IoT.
+     */
     public AmazonFreeRTOSDevice connectToDevice(@NonNull final BluetoothDevice btDevice,
-                                @NonNull final BleConnectionStatusCallback connectionStatusCallback) {
-        AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext);
+                                @NonNull final BleConnectionStatusCallback connectionStatusCallback,
+                                                final AWSCredentialsProvider cp) {
+        AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext, cp);
         mAFreeRTOSDevices.put(btDevice.getAddress(), aDevice);
         aDevice.connect(connectionStatusCallback);
         return aDevice;
     }
 
+    /**
+     * Connect to the BLE device, and notify the connection state via BleConnectionStatusCallback.
+     * @param connectionStatusCallback The callback to notify app whether the BLE connection is
+     *                                 successful. Must not be null.
+     * @param btDevice the BLE device to be connected to.
+     * @param ks the KeyStore that contains certificate used to connect to AWS IoT.
+     */
+    public AmazonFreeRTOSDevice connectToDevice(@NonNull final BluetoothDevice btDevice,
+                                                @NonNull final BleConnectionStatusCallback connectionStatusCallback,
+                                                final KeyStore ks) {
+        AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext, ks);
+        mAFreeRTOSDevices.put(btDevice.getAddress(), aDevice);
+        aDevice.connect(connectionStatusCallback);
+        return aDevice;
+    }
+
+    /**
+     * Closing BLE connection for the AmazonFreeRTOSDevice, reset all variables, and disconnect from AWS IoT.
+     * @param aDevice The AmazonFreeRTOSDevice to be disconnected.
+     */
     public void disconnectFromDevice(@NonNull final AmazonFreeRTOSDevice aDevice) {
         mAFreeRTOSDevices.remove(aDevice.getMBluetoothDevice().getAddress());
         aDevice.disconnect();
     }
 
+    /**
+     * Get the instance of AmazonFreeRTOSDevice given the mac address of the BLE device
+     * @param macAddr the mac address of the connected BLE device
+     * @return the corresponding AmazonFreeRTOSDevice instance that represents the connected BLE device.
+     */
     public AmazonFreeRTOSDevice getConnectedDevice(String macAddr) {
         return mAFreeRTOSDevices.get(macAddr);
     }

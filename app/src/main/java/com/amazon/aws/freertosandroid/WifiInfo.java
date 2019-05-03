@@ -1,5 +1,7 @@
 package com.amazon.aws.freertosandroid;
 
+import java.util.Objects;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,5 +27,13 @@ public class WifiInfo {
         this.networkType = networkType;
         this.index = index;
         this.connected = connected;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        WifiInfo wifiInfo = (WifiInfo) obj;
+        return Objects.equals(wifiInfo.getSsid(), ssid);
     }
 }

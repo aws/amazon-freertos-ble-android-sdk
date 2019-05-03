@@ -28,8 +28,7 @@ public class AmazonFreeRTOSAgent {
             BluetoothManager bluetoothManager
                     = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
             sBluetoothAdapter = bluetoothManager.getAdapter();
-            AWSCredentialsProvider credentialsProvider = AWSMobileClient.getInstance();
-            sAmazonFreeRTOSManager = new AmazonFreeRTOSManager(context, sBluetoothAdapter, credentialsProvider);
+            sAmazonFreeRTOSManager = new AmazonFreeRTOSManager(context, sBluetoothAdapter);
         }
         return sAmazonFreeRTOSManager;
     }

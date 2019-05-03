@@ -33,22 +33,9 @@ import android.util.Log;
 import com.amazon.aws.amazonfreertossdk.deviceinfo.BrokerEndpoint;
 import com.amazon.aws.amazonfreertossdk.deviceinfo.Mtu;
 import com.amazon.aws.amazonfreertossdk.deviceinfo.Version;
-import com.amazon.aws.amazonfreertossdk.mqttproxy.Connack;
-import com.amazon.aws.amazonfreertossdk.mqttproxy.Connect;
-import com.amazon.aws.amazonfreertossdk.mqttproxy.Puback;
-import com.amazon.aws.amazonfreertossdk.mqttproxy.Publish;
-import com.amazon.aws.amazonfreertossdk.mqttproxy.Suback;
-import com.amazon.aws.amazonfreertossdk.mqttproxy.Subscribe;
-import com.amazon.aws.amazonfreertossdk.mqttproxy.Unsuback;
-import com.amazon.aws.amazonfreertossdk.mqttproxy.Unsubscribe;
-import com.amazon.aws.amazonfreertossdk.networkconfig.DeleteNetworkReq;
-import com.amazon.aws.amazonfreertossdk.networkconfig.DeleteNetworkResp;
-import com.amazon.aws.amazonfreertossdk.networkconfig.EditNetworkReq;
-import com.amazon.aws.amazonfreertossdk.networkconfig.EditNetworkResp;
-import com.amazon.aws.amazonfreertossdk.networkconfig.ListNetworkReq;
-import com.amazon.aws.amazonfreertossdk.networkconfig.ListNetworkResp;
-import com.amazon.aws.amazonfreertossdk.networkconfig.SaveNetworkReq;
-import com.amazon.aws.amazonfreertossdk.networkconfig.SaveNetworkResp;
+import com.amazon.aws.amazonfreertossdk.mqttproxy.*;
+import com.amazon.aws.amazonfreertossdk.networkconfig.*;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttClientStatusCallback;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttManager;
 import com.amazonaws.mobileconnectors.iot.AWSIotMqttMessageDeliveryCallback;
@@ -59,6 +46,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Formatter;
 import java.util.HashMap;
@@ -74,43 +62,8 @@ import lombok.Getter;
 import lombok.NonNull;
 
 import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.AMAZONFREERTOS_SDK_VERSION;
+import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.*;
 import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.AmazonFreeRTOSError.BLE_DISCONNECTED_ERROR;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.BLE_COMMAND_TIMEOUT;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.DELETE_NETWORK_RESP;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.EDIT_NETWORK_RESP;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.LIST_NETWORK_RESP;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_CONNACK;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_CONNECT;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_DISCONNECT;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_PUBACK;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_PUBLISH;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_SUBACK;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_SUBSCRIBE;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_UNSUBACK;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_MSG_UNSUBSCRIBE;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_PROXY_CONTROL_OFF;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MQTT_PROXY_CONTROL_ON;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.SAVE_NETWORK_RESP;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_DEVICE_INFORMATION_SERVICE;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_DEVICE_MTU;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_DEVICE_VERSION;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_IOT_ENDPOINT;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_CONTROL;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_RXLARGE;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_RX;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_SERVICE;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_TXLARGE;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_MQTT_PROXY_TX;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_NETWORK_CONTROL;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_NETWORK_RX;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_NETWORK_RXLARGE;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_NETWORK_SERVICE;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_NETWORK_TXLARGE;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.UUID_NETWORK_TX;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.uuidToName;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.BleConnectionState;
-import static com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants.MqttConnectionState;
 import static com.amazon.aws.amazonfreertossdk.BleCommand.CommandType.DISCOVER_SERVICES;
 import static com.amazon.aws.amazonfreertossdk.BleCommand.CommandType.NOTIFICATION;
 import static com.amazon.aws.amazonfreertossdk.BleCommand.CommandType.READ_CHARACTERISTIC;
@@ -155,27 +108,49 @@ public class AmazonFreeRTOSDevice {
     private AWSIotMqttManager mIotMqttManager;
     private MqttConnectionState mMqttConnectionState = MqttConnectionState.MQTT_Disconnected;
 
-    AmazonFreeRTOSDevice(@NonNull BluetoothDevice device, @NonNull Context context) {
-        mContext = context;
-        mBluetoothDevice = device;
+    private AWSCredentialsProvider mAWSCredential;
+    private KeyStore mKeystore;
+
+    /**
+     * Construct an AmazonFreeRTOSDevice instance.
+     * @param context The app context. Should be passed in by the app that creates a new instance
+     *                of AmazonFreeRTOSDevice.
+     * @param device BluetoothDevice returned from BLE scan result.
+     * @param cp AWS credential for connection to AWS IoT. If null is passed in,
+     *                            then it will not be able to do MQTT proxy over BLE as it cannot
+     *                            connect to AWS IoT.
+     */
+    AmazonFreeRTOSDevice(@NonNull BluetoothDevice device, @NonNull Context context, AWSCredentialsProvider cp) {
+        this(device, context, cp, null);
     }
 
     /**
-     * Connect to the BLE device, and notify the connection state via BleConnectionStatusCallback.
-     * @param connectionStatusCallback The callback to notify app whether the BLE connection is
-     *                                 successful. Must not be null.
+     * Construct an AmazonFreeRTOSDevice instance.
+     * @param context The app context. Should be passed in by the app that creates a new instance
+     *                of AmazonFreeRTOSDevice.
+     * @param device BluetoothDevice returned from BLE scan result.
+     * @param ks  the KeyStore which contains the certificate used to connect to AWS IoT.
      */
+    AmazonFreeRTOSDevice(@NonNull BluetoothDevice device, @NonNull Context context, KeyStore ks) {
+        this(device, context, null, ks);
+    }
+
+    private AmazonFreeRTOSDevice(@NonNull BluetoothDevice device, @NonNull Context context,
+                                 AWSCredentialsProvider cp, KeyStore ks) {
+        mContext = context;
+        mBluetoothDevice = device;
+        mAWSCredential = cp;
+        mKeystore = ks;
+    }
+
     void connect(@NonNull final BleConnectionStatusCallback connectionStatusCallback) {
         mBleConnectionStatusCallback = connectionStatusCallback;
         mHandlerThread = new HandlerThread("BleCommandHandler"); //TODO: unique thread name for each device?
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper());
-        mBluetoothGatt = mBluetoothDevice.connectGatt(mContext, false, mGattCallback, TRANSPORT_LE);
+        mBluetoothGatt = mBluetoothDevice.connectGatt(mContext, true, mGattCallback, TRANSPORT_LE);
     }
 
-    /**
-     * Closing BLE connection, reset all variables, and disconnect from AWS IoT.
-     */
     void disconnect() {
         // If ble connection is lost, clear any pending ble command.
         mBleCommandQueue.clear();
@@ -349,8 +324,7 @@ public class AmazonFreeRTOSDevice {
                         UUID_NETWORK_CONTROL, UUID_NETWORK_SERVICE, ready));
                 break;
             case UUID_MQTT_PROXY_SERVICE:
-                if (AmazonFreeRTOSManager.getClientKeyStore() != null ||
-                        AmazonFreeRTOSManager.getCredentialProvider() != null){
+                if (mKeystore != null || mAWSCredential != null){
                     Log.i(TAG, (enable ? "Enabling" : "Disabling") + " MQTT Proxy");
                     sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
                         UUID_MQTT_PROXY_CONTROL, UUID_MQTT_PROXY_SERVICE, ready));
@@ -753,12 +727,12 @@ public class AmazonFreeRTOSDevice {
             }
         };
 
-        if (AmazonFreeRTOSManager.getClientKeyStore() != null) {
+        if (mKeystore != null) {
             Log.i(TAG, "Connecting to IoT using KeyStore: " + connect.brokerEndpoint);
-            mIotMqttManager.connect(AmazonFreeRTOSManager.getClientKeyStore(), mqttClientStatusCallback);
+            mIotMqttManager.connect(mKeystore, mqttClientStatusCallback);
         } else {
             Log.i(TAG, "Connecting to IoT using AWS credential: " + connect.brokerEndpoint);
-            mIotMqttManager.connect(AmazonFreeRTOSManager.getCredentialProvider(), mqttClientStatusCallback);
+            mIotMqttManager.connect(mAWSCredential, mqttClientStatusCallback);
         }
     }
 

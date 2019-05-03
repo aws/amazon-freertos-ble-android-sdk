@@ -28,6 +28,7 @@ import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSDevice;
 import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSManager;
 import com.amazon.aws.amazonfreertossdk.BleConnectionStatusCallback;
 import com.amazon.aws.amazonfreertossdk.BleScanResultCallback;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.mobile.client.AWSMobileClient;
 
 import java.util.ArrayList;
@@ -72,8 +73,10 @@ public class DeviceScanFragment extends Fragment {
                 public void onCheckedChanged(CompoundButton v, boolean isChecked) {
                     Log.i(TAG, "connect switch isChecked: " + (isChecked ? "ON":"OFF"));
                     if (isChecked) {
+                        AWSCredentialsProvider credentialsProvider = AWSMobileClient.getInstance();
+
                         aDevice = mAmazonFreeRTOSManager.connectToDevice(mBleDevice.getBluetoothDevice(),
-                                connectionStatusCallback);
+                                connectionStatusCallback, credentialsProvider);
                     } else {
                         if (aDevice != null) {
                             mAmazonFreeRTOSManager.disconnectFromDevice(aDevice);

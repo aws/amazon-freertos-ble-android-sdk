@@ -274,9 +274,11 @@ public class WifiProvisionFragment extends Fragment {
                     WifiInfo wifiInfo = new WifiInfo(response.getSsid(), response.getBssid(),
                             response.getRssi(), response.getSecurity(), response.getIndex(),
                             response.getConnected());
-                    mWifiInfoList.add(wifiInfo);
-                    mBssid2WifiInfoMap.put(bssidToString(wifiInfo.getBssid()), wifiInfo);
-                    mWifiInfoAdapter.notifyDataSetChanged();
+                    if (!mWifiInfoList.contains(wifiInfo)) {
+                        mWifiInfoList.add(wifiInfo);
+                        mBssid2WifiInfoMap.put(bssidToString(wifiInfo.getBssid()), wifiInfo);
+                        mWifiInfoAdapter.notifyDataSetChanged();
+                    }
                 }
             });
         }
