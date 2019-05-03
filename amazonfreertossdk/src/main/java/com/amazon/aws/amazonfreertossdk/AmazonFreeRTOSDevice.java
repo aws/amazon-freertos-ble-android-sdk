@@ -71,7 +71,7 @@ import static com.amazon.aws.amazonfreertossdk.BleCommand.CommandType.REQUEST_MT
 
 public class AmazonFreeRTOSDevice {
 
-    private static final String TAG = "AmazonFreeRTOSDevice";
+    private static final String TAG = "FRD";
     private static final boolean VDBG = false;
     private Context mContext;
 
@@ -85,7 +85,9 @@ public class AmazonFreeRTOSDevice {
     private String mAmazonFreeRTOSLibVersion;
     private int mMtu = 0;
 
-    private Queue<BleCommand> mBleCommandQueue = new LinkedList<>();
+    private boolean rr = false;
+    private Queue<BleCommand> mMqttQueue = new LinkedList<>();
+    private Queue<BleCommand> mNetworkQueue = new LinkedList<>();
     private Queue<BleCommand> mIncomingQueue = new LinkedList<>();
     private boolean mBleOperationInProgress = false;
     private boolean mRWinProgress = false;
@@ -154,7 +156,8 @@ public class AmazonFreeRTOSDevice {
 
     void disconnect() {
         // If ble connection is lost, clear any pending ble command.
-        mBleCommandQueue.clear();
+        mMqttQueue.clear();
+        mNetworkQueue.clear();
         mIncomingQueue.clear();
         mMessageId = 0;
         mMtu = 0;
@@ -962,10 +965,9 @@ public class AmazonFreeRTOSDevice {
                 Log.i(TAG, "This message is larger than max payload size: " + mMaxPayloadLen
                         + ". Breaking down to " + mTotalPackets + " packets.");
                 mPacketCount = 0; //reset packet count
-                mRxLargeObject = Arrays.copyOf(data, data.length);
-                while (mMaxPayloadLen * mPacketCount <= mRxLargeObject.length) {
-                    byte[] packet = Arrays.copyOfRange(mRxLargeObject, mMaxPayloadLen * mPacketCount,
-                            Math.min(mRxLargeObject.length, mMaxPayloadLen * mPacketCount + mMaxPayloadLen));
+                while (mMaxPayloadLen * mPacketCount <= data.length) {
+                    byte[] packet = Arrays.copyOfRange(data, mMaxPayloadLen * mPacketCount,
+                            Math.min(data.length, mMaxPayloadLen * mPacketCount + mMaxPayloadLen));
                     mPacketCount++;
                     Log.d(TAG, "Packet #" + mPacketCount + ": " + bytesToHexString(packet));
                     sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_CHARACTERISTIC,
@@ -976,7 +978,11 @@ public class AmazonFreeRTOSDevice {
     }
 
     private void sendBleCommand(final BleCommand command) {
-        mBleCommandQueue.add(command);
+        if (UUID_MQTT_PROXY_SERVICE.equals(command.getServiceUuid())) {
+            mMqttQueue.add(command);
+        } else {
+            mNetworkQueue.add(command);
+        }
         processBleCommandQueue();
     }
 
@@ -984,17 +990,30 @@ public class AmazonFreeRTOSDevice {
         try {
             mutex.acquire();
             if (mBleOperationInProgress) {
-                Log.d(TAG, "Ble operation is in progress. There are " + mBleCommandQueue.size()
-                        + " Ble commands in the queue.");
+                Log.d(TAG, "Ble operation is in progress. mqtt queue: " + mMqttQueue.size()
+                        + " network queue: " + mNetworkQueue.size());
             } else {
-                BleCommand bleCommand = mBleCommandQueue.poll();
-                if (bleCommand == null) {
+                if (mMqttQueue.peek() == null && mNetworkQueue.peek() == null) {
                     Log.d(TAG, "There's no ble command in the queue.");
                     mBleOperationInProgress = false;
                 } else {
                     mBleOperationInProgress = true;
+                    BleCommand bleCommand;
+                    if (mNetworkQueue.peek() != null && mMqttQueue.peek() != null) {
+                        if (rr) {
+                            bleCommand = mMqttQueue.poll();
+                        } else {
+                            bleCommand = mNetworkQueue.poll();
+                        }
+                        rr = !rr;
+                    } else if (mNetworkQueue.peek() != null) {
+                        bleCommand = mNetworkQueue.poll();
+                    } else {
+                        bleCommand = mMqttQueue.poll();
+                    }
                     Log.d(TAG, "Processing BLE command: " + bleCommand.getType()
-                            + " queue size: " + mBleCommandQueue.size());
+                            + " remaining mqtt queue " + mMqttQueue.size()
+                            + ", network queue " + mNetworkQueue.size());
                     boolean commandSent = false;
                     switch (bleCommand.getType()) {
                         case WRITE_DESCRIPTOR:
