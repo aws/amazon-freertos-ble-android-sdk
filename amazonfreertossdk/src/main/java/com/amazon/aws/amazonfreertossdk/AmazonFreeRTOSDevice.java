@@ -143,12 +143,13 @@ public class AmazonFreeRTOSDevice {
         mKeystore = ks;
     }
 
-    void connect(@NonNull final BleConnectionStatusCallback connectionStatusCallback) {
+    void connect(@NonNull final BleConnectionStatusCallback connectionStatusCallback,
+                 final boolean autoReconnect) {
         mBleConnectionStatusCallback = connectionStatusCallback;
         mHandlerThread = new HandlerThread("BleCommandHandler"); //TODO: unique thread name for each device?
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper());
-        mBluetoothGatt = mBluetoothDevice.connectGatt(mContext, true, mGattCallback, TRANSPORT_LE);
+        mBluetoothGatt = mBluetoothDevice.connectGatt(mContext, autoReconnect, mGattCallback, TRANSPORT_LE);
     }
 
     void disconnect() {
@@ -402,7 +403,7 @@ public class AmazonFreeRTOSDevice {
                     } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                         //intentAction = ACTION_GATT_DISCONNECTED;
                         mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED;
-                        disconnect();
+                        //disconnect();
                         Log.i(TAG, "Disconnected from GATT server.");
                         mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
                         //broadcastUpdate(intentAction);
@@ -637,6 +638,11 @@ public class AmazonFreeRTOSDevice {
                 if (puback.decode(message)) {
                     Log.w(TAG, "Received mqtt pub ack from device. MsgID: " + puback.msgID);
                 }
+                break;
+            case MQTT_MSG_PINGREQ:
+                PingResp pingResp = new PingResp();
+                byte[] pingRespBytes = pingResp.encode();
+                sendDataToDevice(UUID_MQTT_PROXY_SERVICE, UUID_MQTT_PROXY_RX, UUID_MQTT_PROXY_RXLARGE, pingRespBytes);
                 break;
             default:
                 Log.e(TAG, "Unknown mqtt message type: " + messageType.type);

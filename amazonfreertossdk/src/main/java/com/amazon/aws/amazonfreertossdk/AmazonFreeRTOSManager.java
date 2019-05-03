@@ -177,13 +177,15 @@ public class AmazonFreeRTOSManager {
      *                                 successful. Must not be null.
      * @param btDevice the BLE device to be connected to.
      * @param cp the AWSCredential used to connect to AWS IoT.
+     * @param autoReconnect auto reconnect to device after unexpected disconnect
      */
     public AmazonFreeRTOSDevice connectToDevice(@NonNull final BluetoothDevice btDevice,
                                 @NonNull final BleConnectionStatusCallback connectionStatusCallback,
-                                                final AWSCredentialsProvider cp) {
+                                                final AWSCredentialsProvider cp,
+                                                final boolean autoReconnect) {
         AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext, cp);
         mAFreeRTOSDevices.put(btDevice.getAddress(), aDevice);
-        aDevice.connect(connectionStatusCallback);
+        aDevice.connect(connectionStatusCallback, autoReconnect);
         return aDevice;
     }
 
@@ -193,13 +195,15 @@ public class AmazonFreeRTOSManager {
      *                                 successful. Must not be null.
      * @param btDevice the BLE device to be connected to.
      * @param ks the KeyStore that contains certificate used to connect to AWS IoT.
+     * @param autoReconnect auto reconnect to device after unexpected disconnect
      */
     public AmazonFreeRTOSDevice connectToDevice(@NonNull final BluetoothDevice btDevice,
                                                 @NonNull final BleConnectionStatusCallback connectionStatusCallback,
-                                                final KeyStore ks) {
+                                                final KeyStore ks,
+                                                final boolean autoReconnect) {
         AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext, ks);
         mAFreeRTOSDevices.put(btDevice.getAddress(), aDevice);
-        aDevice.connect(connectionStatusCallback);
+        aDevice.connect(connectionStatusCallback, autoReconnect);
         return aDevice;
     }
 

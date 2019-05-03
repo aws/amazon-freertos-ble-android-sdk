@@ -55,6 +55,7 @@ public class DeviceScanFragment extends Fragment {
 
         private BleDevice mBleDevice;
 
+        private boolean userDisconnect = true;
         public BleDeviceHolder(LayoutInflater inflater, ViewGroup parent) {
             super(inflater.inflate(R.layout.list_device, parent, false));
             mBleDeviceNameTextView = (TextView) itemView.findViewById(R.id.device_name);
@@ -69,17 +70,25 @@ public class DeviceScanFragment extends Fragment {
             mBleDeviceMacTextView.setText(mBleDevice.getMacAddr());
             mBleDeviceSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
                 AmazonFreeRTOSDevice aDevice = null;
+                boolean autoReconnect = true;
                 @Override
                 public void onCheckedChanged(CompoundButton v, boolean isChecked) {
                     Log.i(TAG, "connect switch isChecked: " + (isChecked ? "ON":"OFF"));
                     if (isChecked) {
-                        AWSCredentialsProvider credentialsProvider = AWSMobileClient.getInstance();
+                        if (aDevice == null) {
+                            AWSCredentialsProvider credentialsProvider = AWSMobileClient.getInstance();
 
-                        aDevice = mAmazonFreeRTOSManager.connectToDevice(mBleDevice.getBluetoothDevice(),
-                                connectionStatusCallback, credentialsProvider);
+                            aDevice = mAmazonFreeRTOSManager.connectToDevice(mBleDevice.getBluetoothDevice(),
+                                    connectionStatusCallback, credentialsProvider, autoReconnect);
+                        }
                     } else {
-                        if (aDevice != null) {
-                            mAmazonFreeRTOSManager.disconnectFromDevice(aDevice);
+                        if (userDisconnect || !autoReconnect) {
+                            if (aDevice != null) {
+                                mAmazonFreeRTOSManager.disconnectFromDevice(aDevice);
+                                aDevice = null;
+                            }
+                        } else {
+                            userDisconnect = true;
                         }
                         resetUI();
                     }
@@ -127,18 +136,25 @@ public class DeviceScanFragment extends Fragment {
                         public void run() {
                             mMenuTextView.setEnabled(true);
                             mMenuTextView.setTextColor(getResources().getColor(R.color.colorAccent, null));
+                            mBleDeviceSwitch.setChecked(true);
                         }
                     });
                 } else if (connectionStatus == AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED) {
+                    userDisconnect = false;
                     resetUI();
                 }
             }
         };
 
         private void resetUI() {
-            mMenuTextView.setEnabled(false);
-            mMenuTextView.setTextColor(Color.GRAY);
-            mBleDeviceSwitch.setChecked(false);
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mMenuTextView.setEnabled(false);
+                    mMenuTextView.setTextColor(Color.GRAY);
+                    mBleDeviceSwitch.setChecked(false);
+                }
+            });
         }
 
     }
