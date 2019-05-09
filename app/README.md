@@ -24,8 +24,9 @@ For information about configuring and using the demo application, see [Amazon Fr
 
 **Note** 
 
-1. Once the app is connected to a BLE device, make sure you first click "Set MTU" in the "More..." menu before doing MQTT proxy or WiFi Provisoning. MTU size is configured in DemoConstants.java.
-2. For WiFi provisioning, make sure you wait for the app to finish refreshing after each list/save/edit/delete operation.
+
+1. For WiFi provisioning, make sure you wait for the app to finish refreshing after each list/save/edit/delete operation.
+2. For Mqtt Proxy, make sure you click on "Mqtt proxy" menu option after connection is established in order to login.
 3. The current MTU size shows "N/A". This is a limitation of the current version of the app.
 
 ## License
