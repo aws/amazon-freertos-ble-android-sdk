@@ -18,9 +18,8 @@ For information about configuring and using the demo application, see [Amazon Fr
     You can also build the app in Android Studio, after enabling "USB debugging" on your Android device.
   
 3. Start the demo app. Click on the "Scan" button to scan for nearby BLE devices.
-4. Toggle the switch to connect to one of them.
-5. Click on "More..." menu to set MTU.
-6. Click on "More..." menu again to do WiFi provisioning or to enable MQTT Proxy.
+4. Toggle the switch to connect to one of them. "More..." menu will be enabled after connection is successful
+5. Click on "More..." menu to do WiFi provisioning or to sign-in to use MQTT Proxy.
 
 **Note** 
 
