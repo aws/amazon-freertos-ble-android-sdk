@@ -342,8 +342,8 @@ public class AmazonFreeRTOSDevice {
     private void processIncomingQueue() {
         try {
             mIncomingMutex.acquire();
-            BleCommand bleCommand = mIncomingQueue.poll();
-            if (bleCommand != null) {
+            while (mIncomingQueue.size() != 0) {
+                BleCommand bleCommand = mIncomingQueue.poll();
                 Log.d(TAG, "Processing incoming queue. size: " + mIncomingQueue.size());
                 byte[] responseBytes = bleCommand.getData();
                 String cUuid = bleCommand.getCharacteristicUuid();
