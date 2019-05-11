@@ -22,13 +22,11 @@ import com.amazonaws.services.iot.model.AttachPrincipalPolicyRequest;
 import java.util.concurrent.CountDownLatch;
 
 public class AuthenticatorActivity extends AppCompatActivity {
-    public static final String EXTRA_DEVICE_MAC = "com.amazonaws.freertosandroid.device_mac";
     private final static String TAG = "AuthActivity";
     private HandlerThread handlerThread;
     private Handler handler;
-    public static Intent newIntent(Context packageContext, String macAddr) {
+    public static Intent newIntent(Context packageContext) {
         Intent intent = new Intent(packageContext, AuthenticatorActivity.class);
-        intent.putExtra(EXTRA_DEVICE_MAC, macAddr);
         return intent;
     }
 
@@ -73,7 +71,7 @@ public class AuthenticatorActivity extends AppCompatActivity {
                     AWSMobileClient.getInstance().showSignIn(
                         AuthenticatorActivity.this,
                         SignInUIOptions.builder()
-                                .nextActivity(MqttProxyActivity.class)
+                                .nextActivity(null)
                                 .build(),
                         new Callback<UserStateDetails>() {
                             @Override

@@ -22,6 +22,7 @@ import android.widget.CompoundButton;
 import android.widget.PopupMenu;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSConstants;
 import com.amazon.aws.amazonfreertossdk.AmazonFreeRTOSDevice;
@@ -36,6 +37,7 @@ import java.util.List;
 
 public class DeviceScanFragment extends Fragment {
     private static final String TAG = "DeviceScanFragment";
+    private boolean mqttOn = true;
     private RecyclerView mBleDeviceRecyclerView;
     private BleDeviceAdapter mBleDeviceAdapter;
     List<BleDevice> mBleDevices = new ArrayList<>();
@@ -111,9 +113,7 @@ public class DeviceScanFragment extends Fragment {
                                     startActivity(intentToStartWifiProvision);
                                     return true;
                                 case R.id.mqtt_proxy_menu_id:
-                                    Intent intentToStartAuthenticator
-                                            = AuthenticatorActivity.newIntent(getActivity(), mBleDevice.getMacAddr());
-                                    startActivity(intentToStartAuthenticator);
+                                    Toast.makeText(getContext(),"Already signed in",Toast.LENGTH_SHORT).show();
                                     return true;
                             }
                             return false;
@@ -231,6 +231,12 @@ public class DeviceScanFragment extends Fragment {
 
         mBleDeviceAdapter = new BleDeviceAdapter(mBleDevices);
         mBleDeviceRecyclerView.setAdapter(mBleDeviceAdapter);
+
+        if (mqttOn) {
+            Intent intentToStartAuthenticator
+                    = AuthenticatorActivity.newIntent(getActivity());
+            startActivity(intentToStartAuthenticator);
+        }
 
         return view;
     }

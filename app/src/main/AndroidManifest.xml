@@ -30,15 +30,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".MqttProxyActivity"
-            android:parentActivityName=".DeviceScanActivity">
-            <intent-filter>
-                <action android:name="com.amazon.aws.freertosandroid.MainActivity"/>
-
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-        </activity>
-        <activity
             android:name=".DeviceScanActivity"
             android:launchMode="singleTop">
             <intent-filter>
