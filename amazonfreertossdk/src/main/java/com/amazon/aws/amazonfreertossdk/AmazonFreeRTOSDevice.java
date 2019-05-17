@@ -705,7 +705,7 @@ public class AmazonFreeRTOSDevice {
         userMetaData.put("AmazonFreeRTOSSDK", "Android");
         userMetaData.put("AmazonFreeRTOSSDKVersion", AMAZONFREERTOS_SDK_VERSION);
         userMetaData.put("AmazonFreeRTOSLibVersion", mAmazonFreeRTOSLibVersion);
-        mIotMqttManager.addUserMetaData(userMetaData);
+        mIotMqttManager.updateUserMetaData(userMetaData);
 
         AWSIotMqttClientStatusCallback mqttClientStatusCallback = new AWSIotMqttClientStatusCallback() {
             @Override

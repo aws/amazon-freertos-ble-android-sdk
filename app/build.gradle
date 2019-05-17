@@ -21,10 +21,10 @@ android {
 
 dependencies {
     implementation project(':amazonfreertossdk')
-    implementation('com.amazonaws:aws-android-sdk-mobile-client:2.13.2')
-    implementation('com.amazonaws:aws-android-sdk-auth-userpools:2.13.2')
-    implementation('com.amazonaws:aws-android-sdk-auth-ui:2.13.2')
-    implementation 'com.amazonaws:aws-android-sdk-iot:2.13.2'
+    implementation('com.amazonaws:aws-android-sdk-mobile-client:2.13.4')
+    implementation('com.amazonaws:aws-android-sdk-auth-userpools:2.13.4')
+    implementation('com.amazonaws:aws-android-sdk-auth-ui:2.13.4')
+    implementation 'com.amazonaws:aws-android-sdk-iot:2.13.4'
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.android.support:support-v4:26.1.0'
     implementation 'com.android.support.constraint:constraint-layout:1.1.3'
