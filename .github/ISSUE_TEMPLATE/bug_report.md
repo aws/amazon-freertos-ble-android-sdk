@@ -13,7 +13,7 @@ A clear and concise description of what the bug is.
 **Build info**
 What is the branch and commit on the device side?
 What is the branch and tag the SDK side?
-Have you tried to pull the latest code and still see the issue? 
+Does pulling the latest code help resolve the issue? 
 
 **To Reproduce**
 What is the frequency of this issue?
