@@ -82,7 +82,8 @@ public class AmazonFreeRTOSDevice {
     private NetworkConfigCallback mNetworkConfigCallback;
     private DeviceInfoCallback mDeviceInfoCallback;
     private BleConnectionState mBleConnectionState = BleConnectionState.BLE_DISCONNECTED;
-    private String mAmazonFreeRTOSLibVersion;
+    private String mAmazonFreeRTOSLibVersion = "N/A";
+    private String mAmazonFreeRTOSDeviceType = "N/A";
     private int mMtu = 0;
 
     private boolean rr = false;
@@ -303,6 +304,7 @@ public class AmazonFreeRTOSDevice {
 
     private void initialize() {
         getDeviceVersion();
+        getDeviceType();
         getMtu();
         sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_DESCRIPTOR,
                 UUID_MQTT_PROXY_TX, UUID_MQTT_PROXY_SERVICE));
@@ -541,11 +543,20 @@ public class AmazonFreeRTOSDevice {
                             case UUID_DEVICE_VERSION:
                                 Version currentVersion = new Version();
                                 currentVersion.version = new String(responseBytes);
-                                mAmazonFreeRTOSLibVersion = currentVersion.version;
+                                if (!currentVersion.version.isEmpty()) {
+                                    mAmazonFreeRTOSLibVersion = currentVersion.version;
+                                }
                                 Log.i(TAG, "Ble software version on device is: " + currentVersion.version);
                                 if (mDeviceInfoCallback != null) {
                                     mDeviceInfoCallback.onObtainDeviceSoftwareVersion(currentVersion.version);
                                 }
+                                break;
+                            case UUID_DEVICE_PLATFORM:
+                                String platform = new String(responseBytes);
+                                if (!platform.isEmpty()) {
+                                    mAmazonFreeRTOSDeviceType = platform;
+                                }
+                                Log.i(TAG, "Device type is: " + mAmazonFreeRTOSDeviceType);
                                 break;
                             default:
                                 Log.w(TAG, "Unknown characteristic read. ");
@@ -702,9 +713,10 @@ public class AmazonFreeRTOSDevice {
         mIotMqttManager = new AWSIotMqttManager(connect.clientID, connect.brokerEndpoint);
 
         Map<String, String> userMetaData = new HashMap<>();
-        userMetaData.put("AmazonFreeRTOSSDK", "Android");
-        userMetaData.put("AmazonFreeRTOSSDKVersion", AMAZONFREERTOS_SDK_VERSION);
-        userMetaData.put("AmazonFreeRTOSLibVersion", mAmazonFreeRTOSLibVersion);
+        userMetaData.put("AFRSDK", "Android");
+        userMetaData.put("AFRSDKVersion", AMAZONFREERTOS_SDK_VERSION);
+        userMetaData.put("AFRLibVersion", mAmazonFreeRTOSLibVersion);
+        userMetaData.put("Platform", mAmazonFreeRTOSDeviceType);
         mIotMqttManager.updateUserMetaData(userMetaData);
 
         AWSIotMqttClientStatusCallback mqttClientStatusCallback = new AWSIotMqttClientStatusCallback() {
@@ -948,6 +960,18 @@ public class AmazonFreeRTOSDevice {
             Log.d(TAG, "Getting ble software version on device.");
             sendBleCommand(new BleCommand(BleCommand.CommandType.READ_CHARACTERISTIC,
                     UUID_DEVICE_VERSION, UUID_DEVICE_INFORMATION_SERVICE));
+            return true;
+        } else {
+            Log.w(TAG, "Bluetooth connection state is not connected.");
+            return false;
+        }
+    }
+
+    private boolean getDeviceType() {
+        if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
+            Log.d(TAG, "Getting device type...");
+            sendBleCommand(new BleCommand(BleCommand.CommandType.READ_CHARACTERISTIC,
+                    UUID_DEVICE_PLATFORM, UUID_DEVICE_INFORMATION_SERVICE));
             return true;
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
