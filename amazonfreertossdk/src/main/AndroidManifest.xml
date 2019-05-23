@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.amazon.aws.amazonfreertossdk">
+          package="software.amazon.freertos.amazonfreertossdk">
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <!-- initiate device discovery and manipulate bluetooth settings -->
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>

@@ -4,7 +4,7 @@ android {
     compileSdkVersion 26
     buildToolsVersion '28.0.2'
     defaultConfig {
-        applicationId "com.amazon.aws.freertosandroid"
+        applicationId "software.amazon.freertos.demo"
         minSdkVersion 23
         targetSdkVersion 26
         versionCode 1

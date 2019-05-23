@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.amazon.aws.freertosandroid">
+          package="software.amazon.freertos.demo">
 
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <!-- initiate device discovery and manipulate bluetooth settings -->
@@ -24,7 +24,7 @@
         android:theme="@style/AppTheme">
         <activity android:name=".AuthenticatorActivity">
             <intent-filter>
-                <action android:name="com.amazon.aws.freertosandroid.AuthenticatorActivity"/>
+                <action android:name=".AuthenticatorActivity"/>
 
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
