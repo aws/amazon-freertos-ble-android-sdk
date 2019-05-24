@@ -82,8 +82,8 @@ public class AmazonFreeRTOSDevice {
     private NetworkConfigCallback mNetworkConfigCallback;
     private DeviceInfoCallback mDeviceInfoCallback;
     private BleConnectionState mBleConnectionState = BleConnectionState.BLE_DISCONNECTED;
-    private String mAmazonFreeRTOSLibVersion = "N/A";
-    private String mAmazonFreeRTOSDeviceType = "N/A";
+    private String mAmazonFreeRTOSLibVersion = "NA";
+    private String mAmazonFreeRTOSDeviceType = "NA";
     private int mMtu = 0;
 
     private boolean rr = false;
