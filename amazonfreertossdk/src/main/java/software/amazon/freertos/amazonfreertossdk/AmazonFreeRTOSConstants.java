@@ -126,6 +126,7 @@ public class AmazonFreeRTOSConstants {
     public static final String UUID_IOT_ENDPOINT = "8a7f1168-48af-4efb-83b5-e679f932ff02";
     public static final String UUID_DEVICE_MTU = "8a7f1168-48af-4efb-83b5-e679f932ff03";
     public static final String UUID_DEVICE_PLATFORM = "8a7f1168-48af-4efb-83b5-e679f932ff04";
+    public static final String UUID_DEVICE_ID = "8a7f1168-48af-4efb-83b5-e679f932ff05";
 
     public static final Map<String, String> uuidToName = new HashMap<String, String>() {
         {
@@ -143,6 +144,7 @@ public class AmazonFreeRTOSConstants {
             put(UUID_IOT_ENDPOINT, "IOT_ENDPOINT");
             put(UUID_DEVICE_MTU, "DEVICE_MTU");
             put(UUID_DEVICE_PLATFORM, "DEVICE_PLATFORM");
+            put(UUID_DEVICE_ID, "DEVICE_ID");
         }
     };
 
