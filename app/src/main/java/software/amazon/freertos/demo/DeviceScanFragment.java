@@ -38,7 +38,7 @@ import software.amazon.freertos.amazonfreertossdk.BleScanResultCallback;
 
 public class DeviceScanFragment extends Fragment {
     private static final String TAG = "DeviceScanFragment";
-    private boolean mqttOn = false;
+    private boolean mqttOn = true;
     private RecyclerView mBleDeviceRecyclerView;
     private BleDeviceAdapter mBleDeviceAdapter;
     List<BleDevice> mBleDevices = new ArrayList<>();

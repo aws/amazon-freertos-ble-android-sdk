@@ -12,6 +12,8 @@ Using the Android SDK for Amazon FreeRTOS Bluetooth Devices, you can create mobi
 
 - Android 6.0 (API level 23) or higher
 
+- Bluetooth 4.2 or higher
+
 - Android Studio
 
 ## Setting Up the SDK
@@ -44,18 +46,22 @@ dependencies {
 
 ## Contents
 
-All main functions are defined in [AmazonFreeRTOSManager.java](amazonfreertossdk/src/main/java/com/amazon/aws/amazonfreertossdk/AmazonFreeRTOSManager.java). These functions include:
+All main APIs are defined in [AmazonFreeRTOSManager.java](amazonfreertossdk/src/main/java/com/amazon/aws/amazonfreertossdk/AmazonFreeRTOSManager.java). These functions include:
 
 ### BLE Helper Functions
 
 The SDK includes some functions that help you perform BLE operations with Amazon FreeRTOS devices:
 
-```
-startScanBleDevices(final BleScanResultCallback scanResultCallback)
-stopScanBleDevices()
-connectToDevice(final BluetoothDevice bluetoothDevice, final BleConnectionStatusCallback connectionStatusCallback)
-close()
-```
+    ```
+    startScanDevices
+    stopScanDevices
+    connectToDevice
+    disconnectFromDevice
+    ```
+
+Once the connection to the device is established, you get an AmazonFreeRTOSDevice object, and you can
+use this object to do WiFi provisioning or Mqtt proxy.
+
 ### WiFi Provisioning Service
 
 Provision the WiFi credential on the Amazon FreeRTOS device through the app. It provides 4 functions:
@@ -69,12 +75,9 @@ DeleteNetwork
 
 ### MQTT Proxy Service 
 
-The MQTT proxy service controls the MQTT proxy. Its functions include:
-```
-enableProxy()
-disableProxy()
-disconnectFromIot()
-```
+The MQTT proxy service controls the MQTT proxy. It allows the device to send and receive MQTT messages
+from the AWS IoT cloud through the phone, when this feature is enabled.
+
 
 You can find the documentation for these functions in [documentation](documentation).
 

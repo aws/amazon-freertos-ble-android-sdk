@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">aFR Demo</string>
+    <string name="app_name">AmazonFreeRTOS Demo</string>
     <string name="title">AmazonFreeRTOS demo app</string>
     <string name="scan_button">Scan for BLE devices</string>
     <string name="mqtt_switch">Mqtt Proxy</string>
