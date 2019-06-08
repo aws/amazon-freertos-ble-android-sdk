@@ -1,5 +1,5 @@
 # Amazon FreeRTOS BLE Mobile SDK for Android
-
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/badge.svg)](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/)
 ## Introduction
 
 Using the Android SDK for Amazon FreeRTOS Bluetooth Devices, you can create mobile applications that do the following:
@@ -18,19 +18,13 @@ Using the Android SDK for Amazon FreeRTOS Bluetooth Devices, you can create mobi
 
 ## Setting Up the SDK
 
-**To install the Android SDK for Amazon FreeRTOS Bluetooth Devices**
-
-1. Import [amazonfreertossdk](amazonfreertossdk) into your app project in Android Studio.
-
-2. In your app's `gradle` file, add the following dependencies:
-
+1. In your app's `build.gradle` file, add the following into dependencies block:
+(replace x.y.z with [![Maven Central](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/badge.svg)](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/))
 ```
-dependencies {
-    implementation project(":amazonfreertossdk")
-}
+    implementation('software.amazon.freertos:amazonfreertossdk:x.y.z')
 ```
 
-3. In your app's `AndroidManifest.xml` file, add following permissions:
+2. In your app's `AndroidManifest.xml` file, add following permissions:
 
 ```
 <uses-permission android:name="android.permission.BLUETOOTH"/>
@@ -45,8 +39,6 @@ dependencies {
 ```
 
 ## Contents
-
-All main APIs are defined in [AmazonFreeRTOSManager.java](amazonfreertossdk/src/main/java/com/amazon/aws/amazonfreertossdk/AmazonFreeRTOSManager.java). These functions include:
 
 ### BLE Helper Functions
 
