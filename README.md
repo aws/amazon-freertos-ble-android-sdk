@@ -18,10 +18,22 @@ Using the Android SDK for Amazon FreeRTOS Bluetooth Devices, you can create mobi
 
 ## Setting Up the SDK
 
-1. In your app's `build.gradle` file, add the following into dependencies block:
+1. 
+Option 1: install from maven
+In your app's `build.gradle` file, add the following into dependencies block:
 (replace x.y.z with [![Maven Central](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/badge.svg)](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/))
 ```
     implementation('software.amazon.freertos:amazonfreertossdk:x.y.z')
+```
+
+Option 2: build sdk locally
+In your app's `build.gradle` file, add the following into dependencies block:
+```
+    implementation project(':amazonfreertossdk')
+```
+In project's `settings.gradle` file, add ':amazonfreertossdk'
+```
+    include ':app', ':amazonfreertossdk'
 ```
 
 2. In your app's `AndroidManifest.xml` file, add following permissions:
