@@ -22,7 +22,6 @@ import java.util.Map;
  * This class defines some constants used in the SDK.
  */
 public class AmazonFreeRTOSConstants {
-    public static final String AMAZONFREERTOS_SDK_VERSION = "0.9.7";
 
     /**
      * Network security types.
