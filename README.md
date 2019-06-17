@@ -1,5 +1,5 @@
 # Amazon FreeRTOS BLE Mobile SDK for Android
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/badge.svg)](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/badge.svg?cacheSeconds=10)](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/)
 ## Introduction
 
 Using the Android SDK for Amazon FreeRTOS Bluetooth Devices, you can create mobile applications that do the following:
@@ -21,7 +21,7 @@ Using the Android SDK for Amazon FreeRTOS Bluetooth Devices, you can create mobi
 1. 
 Option 1: install from maven
 In your app's `build.gradle` file, add the following into dependencies block:
-(replace x.y.z with [![Maven Central](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/badge.svg)](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/))
+(replace x.y.z with [![Maven Central](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/badge.svg?cacheSeconds=30)](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/))
 ```
     implementation('software.amazon.freertos:amazonfreertossdk:x.y.z')
 ```
