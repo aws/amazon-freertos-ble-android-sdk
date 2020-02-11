@@ -1,6 +1,6 @@
 # Release notes for FreeRTOS BLE Mobile SDK for Android
 
-    ## v1.0.1 2/11/2019
+    ## v1.1.0 2/11/2019
     Name change from Amazon FreeRTOS to FreeRTOS
 
     ## v1.0.0 6/17/2019
