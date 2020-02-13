@@ -5,6 +5,8 @@
 Using the Android SDK for Amazon FreeRTOS Bluetooth Devices, you can create mobile applications that do the following:
 
 - Scan for and connect to nearby BLE devices running Amazon FreeRTOS
+ 
+- Perform WiFi provisioning of the Amazon FreeRTOS BLE devices after connecting to them ( Only supported for Espressif ESP32-DevKitC )
 
 - Act as a proxy for transmitting MQTT messages between a device running Amazon FreeRTOS and the AWS IoT cloud
 
@@ -18,15 +20,16 @@ Using the Android SDK for Amazon FreeRTOS Bluetooth Devices, you can create mobi
 
 ## Setting Up the SDK
 
-1. 
-Option 1: install from maven
+1. Set the SDK as a dependency for the application.
+
+**Option 1**: install from maven
 In your app's `build.gradle` file, add the following into dependencies block:
 (replace x.y.z with [![Maven Central](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/badge.svg?cacheSeconds=30)](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/))
 ```
     implementation('software.amazon.freertos:amazonfreertossdk:x.y.z')
 ```
 
-Option 2: build sdk locally
+**Option 2**: Build the sdk locally.
 In your app's `build.gradle` file, add the following into dependencies block:
 ```
     implementation project(':amazonfreertossdk')
@@ -56,12 +59,12 @@ In project's `settings.gradle` file, add ':amazonfreertossdk'
 
 The SDK includes some functions that help you perform BLE operations with Amazon FreeRTOS devices:
 
-    ```
+```
     startScanDevices
     stopScanDevices
     connectToDevice
     disconnectFromDevice
-    ```
+```
 
 Once the connection to the device is established, you get an AmazonFreeRTOSDevice object, and you can
 use this object to do WiFi provisioning or Mqtt proxy.
@@ -71,10 +74,10 @@ use this object to do WiFi provisioning or Mqtt proxy.
 Provision the WiFi credential on the Amazon FreeRTOS device through the app. It provides 4 functions:
 
 ```
-ListNetwork
-SaveNetwork
-EditNetwork
-DeleteNetwork
+    ListNetwork
+    SaveNetwork
+    EditNetwork
+    DeleteNetwork
 ````
 
 ### MQTT Proxy Service 
