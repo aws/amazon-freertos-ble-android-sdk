@@ -1,10 +1,10 @@
-# Amazon FreeRTOS BLE Mobile SDK for Android: Demo Application
+# FreeRTOS BLE Mobile SDK for Android: Demo Application
 
 ## Introduction
 
-This demo application demonstrates some of the features of the Android SDK for Amazon FreeRTOS Bluetooth devices.
+This demo application demonstrates some of the features of the Android SDK for FreeRTOS Bluetooth devices.
 
-For information about configuring and using the demo application, see [Amazon FreeRTOS BLE Mobile SDK Demo Application](https://docs.aws.amazon.com/freertos/latest/userguide/ble-demo.html#ble-sdk-app) on docs.aws.amazon.com.
+For information about configuring and using the demo application, see [FreeRTOS BLE Mobile SDK Demo Application](https://docs.aws.amazon.com/freertos/latest/userguide/ble-demo.html#ble-sdk-app) on docs.aws.amazon.com.
 
 ## Usage
     0. If you don't need mqtt proxy feature, set boolean mqttOn to false in DeviceScanFragment.java, then skip to step 2.
