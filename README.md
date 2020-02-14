@@ -1,14 +1,14 @@
-# Amazon FreeRTOS BLE Mobile SDK for Android
+# FreeRTOS BLE Mobile SDK for Android
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/badge.svg?cacheSeconds=10)](https://maven-badges.herokuapp.com/maven-central/software.amazon.freertos/amazonfreertossdk/)
 ## Introduction
 
-Using the Android SDK for Amazon FreeRTOS Bluetooth Devices, you can create mobile applications that do the following:
+Using the Android SDK for FreeRTOS Bluetooth Devices, you can create mobile applications that do the following:
 
-- Scan for and connect to nearby BLE devices running Amazon FreeRTOS
+- Scan for and connect to nearby BLE devices running FreeRTOS
  
-- Perform WiFi provisioning of the Amazon FreeRTOS BLE devices after connecting to them ( Only supported for Espressif ESP32-DevKitC )
+- Perform WiFi provisioning of the FreeRTOS BLE devices after connecting to them ( Only supported for Espressif ESP32-DevKitC )
 
-- Act as a proxy for transmitting MQTT messages between a device running Amazon FreeRTOS and the AWS IoT cloud
+- Act as a proxy for transmitting MQTT messages between a device running FreeRTOS and the AWS IoT cloud
 
 ## System requirements
 
@@ -57,7 +57,7 @@ In project's `settings.gradle` file, add ':amazonfreertossdk'
 
 ### BLE Helper Functions
 
-The SDK includes some functions that help you perform BLE operations with Amazon FreeRTOS devices:
+The SDK includes some functions that help you perform BLE operations with FreeRTOS devices:
 
 ```
     startScanDevices
@@ -71,7 +71,7 @@ use this object to do WiFi provisioning or Mqtt proxy.
 
 ### WiFi Provisioning Service
 
-Provision the WiFi credential on the Amazon FreeRTOS device through the app. It provides 4 functions:
+Provision the WiFi credential on the FreeRTOS device through the app. It provides 4 functions:
 
 ```
     ListNetwork
