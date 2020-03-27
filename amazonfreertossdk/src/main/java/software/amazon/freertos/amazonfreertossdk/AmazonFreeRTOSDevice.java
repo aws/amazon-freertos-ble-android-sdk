@@ -167,11 +167,23 @@ public class AmazonFreeRTOSDevice {
         mRxLargeObject = null;
         mTotalPackets = 0;
         mPacketCount = 1;
-        mContext.unregisterReceiver(mBondStateBroadcastReceiver);
+
+
         if (mBluetoothGatt != null) {
             mBluetoothGatt.close();
             mBluetoothGatt = null;
         }
+
+        /**
+         * Unregister the broadcast server. Logs a warning
+         * if the broadcast receiver is not registered yet.
+         */
+        try {
+            mContext.unregisterReceiver(mBondStateBroadcastReceiver);
+        } catch( IllegalArgumentException ex ) {
+            Log.w(TAG, "Failed to unregister broadcast receiver: ",  ex);
+        }
+
         // If ble connection is closed, there's no need to keep mqtt connection open.
         if (mMqttConnectionState != AmazonFreeRTOSConstants.MqttConnectionState.MQTT_Disconnected) {
             disconnectFromIot();
