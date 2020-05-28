@@ -69,10 +69,11 @@ public class AmazonFreeRTOSConstants {
      * Bluetooth connection state. This is matching with BluetoothProfile in the Android SDK.
      */
     public enum BleConnectionState {
-        BLE_DISCONNECTED, // = 0
-        BLE_CONNECTING,   // = 1
-        BLE_CONNECTED,    // = 2
-        BLE_DISCONNECTING // = 3
+        BLE_DISCONNECTED,  // = 0
+        BLE_CONNECTING,    // = 1
+        BLE_CONNECTED,     // = 2
+        BLE_DISCONNECTING, // = 3
+        BLE_INITIALIZED    // = 4
     }
 
     public enum AmazonFreeRTOSError {
