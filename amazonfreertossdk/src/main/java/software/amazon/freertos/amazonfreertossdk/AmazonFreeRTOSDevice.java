@@ -42,7 +42,6 @@ import com.amazonaws.mobileconnectors.iot.AWSIotMqttQos;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
@@ -308,14 +307,21 @@ public class AmazonFreeRTOSDevice {
         }
     };
 
-    private void initialize() {
+    /*
+    Try to read a characteristic from the Gatt service. If pairing is enabled, it will be triggered
+    by this action.
+     */
+    private void probe() {
         getDeviceVersion();
+    }
+
+    /*
+    Initialize the Gatt services
+     */
+    private void initialize() {
         getDeviceType();
         getDeviceId();
         getMtu();
-    }
-
-    private void enableServices() {
         sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_DESCRIPTOR,
                 UUID_MQTT_PROXY_TX, UUID_MQTT_PROXY_SERVICE));
         sendBleCommand(new BleCommand(BleCommand.CommandType.WRITE_DESCRIPTOR,
@@ -460,7 +466,7 @@ public class AmazonFreeRTOSDevice {
                                 +mBluetoothDevice.getBondState());
                         describeGattServices(mBluetoothGatt.getServices());
                         if (mBluetoothDevice.getBondState() != BluetoothDevice.BOND_BONDING) {
-                            initialize();
+                            probe();
                         }
                     } else {
                         Log.e(TAG, "onServicesDiscovered received: " + status);
@@ -518,7 +524,7 @@ public class AmazonFreeRTOSDevice {
                             Log.d(TAG, "GATT services initialized");
                             mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_INITIALIZED;
                             mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
-                            enableServices();
+                            initialize();
                         }
                         byte[] responseBytes = characteristic.getValue();
                         Log.d(TAG, "->->-> onCharacteristicRead status: " + (status == 0 ? "Success. " : status)
