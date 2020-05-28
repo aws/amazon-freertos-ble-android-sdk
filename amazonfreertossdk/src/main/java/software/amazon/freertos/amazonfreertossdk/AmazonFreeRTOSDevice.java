@@ -176,23 +176,6 @@ public class AmazonFreeRTOSDevice {
         if (mBluetoothGatt != null) {
             mBluetoothGatt.disconnect();
         }
-
-//        /**
-//         * Unregister the broadcast server. Logs a warning
-//         * if the broadcast receiver is not registered yet.
-//         */
-//        try {
-//            mContext.unregisterReceiver(mBondStateBroadcastReceiver);
-//        } catch( IllegalArgumentException ex ) {
-//            Log.w(TAG, "Failed to unregister broadcast receiver: ",  ex);
-//        }
-//
-//        // If ble connection is closed, there's no need to keep mqtt connection open.
-//        //mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED;
-//        if (mMqttConnectionState != AmazonFreeRTOSConstants.MqttConnectionState.MQTT_Disconnected) {
-//            disconnectFromIot();
-//        }
-        //mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
     }
 
     /**
@@ -300,6 +283,10 @@ public class AmazonFreeRTOSDevice {
         }
     }
 
+    /*
+        This receiver is not needed anymore as the successful bonding is determined when a characteristc
+        is successfully read.
+     */
     private final BroadcastReceiver mBondStateBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -309,9 +296,10 @@ public class AmazonFreeRTOSDevice {
                     int prev = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, BluetoothDevice.ERROR);
                     int now = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
                     Log.d(TAG, "Bond state changed from " + prev + " to " + now);
-                    if (prev == BluetoothDevice.BOND_BONDING && now == BluetoothDevice.BOND_BONDED) {
-                        enableServices();
-                    }
+
+//                    if (prev == BluetoothDevice.BOND_BONDING && now == BluetoothDevice.BOND_BONDED) {
+//                        enableServices();
+//                    }
                     break;
                 }
                 default:
@@ -515,8 +503,6 @@ public class AmazonFreeRTOSDevice {
                     mMaxPayloadLen = mMaxPayloadLen > 0 ? mMaxPayloadLen : 0;
                     enableService(UUID_NETWORK_SERVICE, true);
                     enableService(UUID_MQTT_PROXY_SERVICE, true);
-                    mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_INITIALIZED;
-                    mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
                     processNextBleCommand();
                 }
 
@@ -527,7 +513,13 @@ public class AmazonFreeRTOSDevice {
                                                  int status) {
                     mRWinProgress = false;
                     if (status == BluetoothGatt.GATT_SUCCESS) {
-
+                        // On the first successful read we enable the services
+                        if (mBleConnectionState == BleConnectionState.BLE_CONNECTED) {
+                            Log.d(TAG, "GATT services initialized");
+                            mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_INITIALIZED;
+                            mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
+                            enableServices();
+                        }
                         byte[] responseBytes = characteristic.getValue();
                         Log.d(TAG, "->->-> onCharacteristicRead status: " + (status == 0 ? "Success. " : status)
                                 + bytesToHexString(responseBytes));
@@ -573,6 +565,7 @@ public class AmazonFreeRTOSDevice {
                                 Log.i(TAG, "Default MTU is set to: " + currentMtu.mtu);
                                 try {
                                     mMtu = Integer.parseInt(currentMtu.mtu);
+                                    mMaxPayloadLen = mMtu - 3;
                                     if (mDeviceInfoCallback != null) {
                                         mDeviceInfoCallback.onObtainMtu(mMtu);
                                     } else {
@@ -913,8 +906,11 @@ public class AmazonFreeRTOSDevice {
         sendDataToDevice(UUID_MQTT_PROXY_SERVICE, UUID_MQTT_PROXY_RX, UUID_MQTT_PROXY_RXLARGE, connackBytes);
     }
 
+    private boolean isBLEConnected() {
+        return mBleConnectionState == BleConnectionState.BLE_CONNECTED || mBleConnectionState == BleConnectionState.BLE_INITIALIZED;
+    }
     private void sendSubAck(final Subscribe subscribe) {
-        if (mBleConnectionState != BleConnectionState.BLE_CONNECTED) {
+        if (!isBLEConnected()) {
             Log.e(TAG, "Cannot send SUB ACK to BLE device because BLE connection state" +
                     " is not connected");
             return;
@@ -929,7 +925,7 @@ public class AmazonFreeRTOSDevice {
     }
 
     private void sendUnsubAck(final Unsubscribe unsubscribe) {
-        if (mBleConnectionState != BleConnectionState.BLE_CONNECTED) {
+        if (!isBLEConnected()) {
             Log.e(TAG, "Cannot send Unsub ACK to BLE device because BLE connection state" +
                     " is not connected");
             return;
@@ -943,7 +939,7 @@ public class AmazonFreeRTOSDevice {
     }
 
     private void sendPubAck(final Publish publish) {
-        if (mBleConnectionState != BleConnectionState.BLE_CONNECTED) {
+        if (!isBLEConnected()) {
             Log.e(TAG, "Cannot send PUB ACK to BLE device because BLE connection state" +
                     " is not connected");
             return;
@@ -957,7 +953,7 @@ public class AmazonFreeRTOSDevice {
     }
 
     private void publishToDevice(final Publish publish) {
-        if (mBleConnectionState != BleConnectionState.BLE_CONNECTED) {
+        if (!isBLEConnected()) {
             Log.e(TAG, "Cannot deliver mqtt message to BLE device because BLE connection state" +
                     " is not connected");
             return;
@@ -970,7 +966,7 @@ public class AmazonFreeRTOSDevice {
     }
 
     private void discoverServices() {
-        if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
+        if (isBLEConnected() && mBluetoothGatt != null) {
             sendBleCommand(new BleCommand(DISCOVER_SERVICES));
         } else {
             Log.w(TAG, "Bluetooth connection state is not connected.");
@@ -978,7 +974,7 @@ public class AmazonFreeRTOSDevice {
     }
 
     private void setMtu(int mtu) {
-        if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
+        if (mBleConnectionState == BleConnectionState.BLE_INITIALIZED && mBluetoothGatt != null) {
             Log.i(TAG, "Setting mtu to: " + mtu);
             sendBleCommand(new BleCommand(REQUEST_MTU, mtu));
         } else {
@@ -987,7 +983,7 @@ public class AmazonFreeRTOSDevice {
     }
 
     private boolean getMtu() {
-        if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
+        if (isBLEConnected() && mBluetoothGatt != null) {
             Log.d(TAG, "Getting current MTU.");
             sendBleCommand(new BleCommand(BleCommand.CommandType.READ_CHARACTERISTIC,
                     UUID_DEVICE_MTU, UUID_DEVICE_INFORMATION_SERVICE));
@@ -999,7 +995,7 @@ public class AmazonFreeRTOSDevice {
     }
 
     private boolean getBrokerEndpoint() {
-        if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
+        if (isBLEConnected() && mBluetoothGatt != null) {
             Log.d(TAG, "Getting broker endpoint.");
             sendBleCommand(new BleCommand(BleCommand.CommandType.READ_CHARACTERISTIC,
                     UUID_IOT_ENDPOINT, UUID_DEVICE_INFORMATION_SERVICE));
@@ -1011,7 +1007,7 @@ public class AmazonFreeRTOSDevice {
     }
 
     private boolean getDeviceVersion() {
-        if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
+        if (isBLEConnected() && mBluetoothGatt != null) {
             Log.d(TAG, "Getting ble software version on device.");
             sendBleCommand(new BleCommand(BleCommand.CommandType.READ_CHARACTERISTIC,
                     UUID_DEVICE_VERSION, UUID_DEVICE_INFORMATION_SERVICE));
@@ -1023,7 +1019,7 @@ public class AmazonFreeRTOSDevice {
     }
 
     private boolean getDeviceType() {
-        if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
+        if (isBLEConnected() && mBluetoothGatt != null) {
             Log.d(TAG, "Getting device type...");
             sendBleCommand(new BleCommand(BleCommand.CommandType.READ_CHARACTERISTIC,
                     UUID_DEVICE_PLATFORM, UUID_DEVICE_INFORMATION_SERVICE));
@@ -1035,7 +1031,7 @@ public class AmazonFreeRTOSDevice {
     }
 
     private boolean getDeviceId() {
-        if (mBleConnectionState == BleConnectionState.BLE_CONNECTED && mBluetoothGatt != null) {
+        if (isBLEConnected() && mBluetoothGatt != null) {
             Log.d(TAG, "Getting device cert id...");
             sendBleCommand(new BleCommand(BleCommand.CommandType.READ_CHARACTERISTIC,
                     UUID_DEVICE_ID, UUID_DEVICE_INFORMATION_SERVICE));
