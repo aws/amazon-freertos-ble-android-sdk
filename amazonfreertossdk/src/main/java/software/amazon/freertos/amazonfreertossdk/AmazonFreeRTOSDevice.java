@@ -470,6 +470,9 @@ public class AmazonFreeRTOSDevice {
                     mMtu = mtu;
                     mMaxPayloadLen = mMtu - 3;
                     mMaxPayloadLen = mMaxPayloadLen > 0 ? mMaxPayloadLen : 0;
+                    // The BLE service should be initialized at this stage
+                    mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_INITIALIZED;
+                    mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
                     enableService(UUID_NETWORK_SERVICE, true);
                     enableService(UUID_MQTT_PROXY_SERVICE, true);
                     processNextBleCommand();
@@ -484,8 +487,8 @@ public class AmazonFreeRTOSDevice {
                     if (status == BluetoothGatt.GATT_SUCCESS) {
                         // On the first successful read we enable the services
                         if (mBleConnectionState == BleConnectionState.BLE_CONNECTED) {
-                            Log.d(TAG, "GATT services initialized");
-                            mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_INITIALIZED;
+                            Log.d(TAG, "GATT services initializing...");
+                            mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_INITIALIZING;
                             mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
                             initialize();
                         }
@@ -537,9 +540,8 @@ public class AmazonFreeRTOSDevice {
                                     mMaxPayloadLen = mMtu - 3;
                                     if (mDeviceInfoCallback != null) {
                                         mDeviceInfoCallback.onObtainMtu(mMtu);
-                                    } else {
-                                        setMtu(mMtu);
                                     }
+                                    setMtu(mMtu);
                                 } catch (NumberFormatException e) {
                                     Log.e(TAG, "Cannot parse default MTU value.");
                                 }
@@ -876,7 +878,9 @@ public class AmazonFreeRTOSDevice {
     }
 
     private boolean isBLEConnected() {
-        return mBleConnectionState == BleConnectionState.BLE_CONNECTED || mBleConnectionState == BleConnectionState.BLE_INITIALIZED;
+        return mBleConnectionState == BleConnectionState.BLE_CONNECTED ||
+                mBleConnectionState == BleConnectionState.BLE_INITIALIZED ||
+                mBleConnectionState == BleConnectionState.BLE_INITIALIZING;
     }
     private void sendSubAck(final Subscribe subscribe) {
         if (!isBLEConnected()) {
