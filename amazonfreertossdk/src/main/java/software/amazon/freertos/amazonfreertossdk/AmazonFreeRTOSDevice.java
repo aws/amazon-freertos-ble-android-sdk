@@ -471,8 +471,10 @@ public class AmazonFreeRTOSDevice {
                     mMaxPayloadLen = mMtu - 3;
                     mMaxPayloadLen = mMaxPayloadLen > 0 ? mMaxPayloadLen : 0;
                     // The BLE service should be initialized at this stage
-                    mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_INITIALIZED;
-                    mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
+                    if ( mBleConnectionState == BleConnectionState.BLE_INITIALIZING) {
+                        mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_INITIALIZED;
+                        mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
+                    }
                     enableService(UUID_NETWORK_SERVICE, true);
                     enableService(UUID_MQTT_PROXY_SERVICE, true);
                     processNextBleCommand();
