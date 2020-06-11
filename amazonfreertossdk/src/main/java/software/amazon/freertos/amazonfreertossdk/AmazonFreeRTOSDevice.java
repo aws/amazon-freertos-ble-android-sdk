@@ -283,31 +283,6 @@ public class AmazonFreeRTOSDevice {
     }
 
     /*
-        This receiver is not needed anymore as the successful bonding is determined when a characteristc
-        is successfully read.
-     */
-    private final BroadcastReceiver mBondStateBroadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            switch (action) {
-                case BluetoothDevice.ACTION_BOND_STATE_CHANGED: {
-                    int prev = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, BluetoothDevice.ERROR);
-                    int now = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
-                    Log.d(TAG, "Bond state changed from " + prev + " to " + now);
-
-//                    if (prev == BluetoothDevice.BOND_BONDING && now == BluetoothDevice.BOND_BONDED) {
-//                        enableServices();
-//                    }
-                    break;
-                }
-                default:
-                    break;
-            }
-        }
-    };
-
-    /*
     Try to read a characteristic from the Gatt service. If pairing is enabled, it will be triggered
     by this action.
      */
@@ -416,9 +391,6 @@ public class AmazonFreeRTOSDevice {
                             int bondState = mBluetoothDevice.getBondState();
 
                             mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_CONNECTED;
-                            final IntentFilter bondFilter = new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
-                            // Register a broadcast recevier to track the bonding process completion.
-                            mContext.registerReceiver(mBondStateBroadcastReceiver, bondFilter);
                             Log.i(TAG, "Connected to GATT server.");
                             // If the device is already bonded or will not bond we can call discoverServices() immediately
                             if (bondState == BluetoothDevice.BOND_NONE || bondState == BluetoothDevice.BOND_BONDED) {
@@ -428,15 +400,6 @@ public class AmazonFreeRTOSDevice {
                             //intentAction = ACTION_GATT_DISCONNECTED;
                             mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED;
                             Log.i(TAG, "Disconnected from GATT server.");
-                            /**
-                             * Unregister the broadcast server. Logs a warning
-                             * if the broadcast receiver is not registered yet.
-                             */
-                            try {
-                                mContext.unregisterReceiver(mBondStateBroadcastReceiver);
-                            } catch (IllegalArgumentException ex) {
-                                Log.w(TAG, "Failed to unregister broadcast receiver: ", ex);
-                            }
 
                             // If ble connection is closed, there's no need to keep mqtt connection open.
                             //mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED;
