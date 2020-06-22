@@ -85,6 +85,7 @@ public class AmazonFreeRTOSDevice {
     private String mAmazonFreeRTOSLibVersion = "NA";
     private String mAmazonFreeRTOSDeviceType = "NA";
     private String mAmazonFreeRTOSDeviceId = "NA";
+    private boolean mGattAutoReconnect = false;
     private int mMtu = 0;
 
     private boolean rr = false;
@@ -153,10 +154,11 @@ public class AmazonFreeRTOSDevice {
         mHandlerThread = new HandlerThread("BleCommandHandler"); //TODO: unique thread name for each device?
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper());
+        mGattAutoReconnect = autoReconnect;
         mBluetoothGatt = mBluetoothDevice.connectGatt(mContext, autoReconnect, mGattCallback, TRANSPORT_LE);
     }
 
-    void disconnect() {
+    private void cleanUp() {
         // If ble connection is lost, clear any pending ble command.
         mMqttQueue.clear();
         mNetworkQueue.clear();
@@ -167,12 +169,14 @@ public class AmazonFreeRTOSDevice {
         mRxLargeObject = null;
         mTotalPackets = 0;
         mPacketCount = 1;
+    }
 
+    void disconnect() {
         /**
-         * Call disconnect but not close. Close will be called in the Gatt callback.
-         * This allows Android to track the changes
+         * User initiated disconnect
          */
         if (mBluetoothGatt != null) {
+            mGattAutoReconnect = false;
             mBluetoothGatt.disconnect();
         }
     }
@@ -406,9 +410,13 @@ public class AmazonFreeRTOSDevice {
                             if (mMqttConnectionState != AmazonFreeRTOSConstants.MqttConnectionState.MQTT_Disconnected) {
                                 disconnectFromIot();
                             }
-                            gatt.close();
-                            mBluetoothGatt = null;
-                            disconnect();
+
+                            // If not using auto reconnect or if user initiated disconnect
+                            if (!mGattAutoReconnect) {
+                                gatt.close();
+                                mBluetoothGatt = null;
+                            }
+                            cleanUp();
                             //broadcastUpdate(intentAction);
                         }
                     } else {
