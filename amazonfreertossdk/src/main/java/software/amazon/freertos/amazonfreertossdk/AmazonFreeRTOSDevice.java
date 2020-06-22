@@ -752,7 +752,7 @@ public class AmazonFreeRTOSDevice {
                     case Connected:
                         mMqttConnectionState = AmazonFreeRTOSConstants.MqttConnectionState.MQTT_Connected;
                         //sending connack
-                        if (mBleConnectionState == BleConnectionState.BLE_CONNECTED) {
+                        if (isBLEConnected() && mBluetoothGatt != null) {
                             sendConnAck();
                         } else {
                             Log.e(TAG, "Cannot send CONNACK because BLE connection is: " + mBleConnectionState);
@@ -885,7 +885,7 @@ public class AmazonFreeRTOSDevice {
                 mBleConnectionState == BleConnectionState.BLE_INITIALIZING;
     }
     private void sendSubAck(final Subscribe subscribe) {
-        if (!isBLEConnected()) {
+        if (!isBLEConnected() && mBluetoothGatt != null) {
             Log.e(TAG, "Cannot send SUB ACK to BLE device because BLE connection state" +
                     " is not connected");
             return;
@@ -900,7 +900,7 @@ public class AmazonFreeRTOSDevice {
     }
 
     private void sendUnsubAck(final Unsubscribe unsubscribe) {
-        if (!isBLEConnected()) {
+        if (!isBLEConnected() && mBluetoothGatt != null) {
             Log.e(TAG, "Cannot send Unsub ACK to BLE device because BLE connection state" +
                     " is not connected");
             return;
@@ -914,7 +914,7 @@ public class AmazonFreeRTOSDevice {
     }
 
     private void sendPubAck(final Publish publish) {
-        if (!isBLEConnected()) {
+        if (!isBLEConnected() && mBluetoothGatt != null) {
             Log.e(TAG, "Cannot send PUB ACK to BLE device because BLE connection state" +
                     " is not connected");
             return;
@@ -928,7 +928,7 @@ public class AmazonFreeRTOSDevice {
     }
 
     private void publishToDevice(final Publish publish) {
-        if (!isBLEConnected()) {
+        if (!isBLEConnected() && mBluetoothGatt != null) {
             Log.e(TAG, "Cannot deliver mqtt message to BLE device because BLE connection state" +
                     " is not connected");
             return;
@@ -949,7 +949,7 @@ public class AmazonFreeRTOSDevice {
     }
 
     private void setMtu(int mtu) {
-        if (mBleConnectionState == BleConnectionState.BLE_INITIALIZED && mBluetoothGatt != null) {
+        if (isBLEConnected()  && mBluetoothGatt != null) {
             Log.i(TAG, "Setting mtu to: " + mtu);
             sendBleCommand(new BleCommand(REQUEST_MTU, mtu));
         } else {
@@ -964,7 +964,7 @@ public class AmazonFreeRTOSDevice {
                     UUID_DEVICE_MTU, UUID_DEVICE_INFORMATION_SERVICE));
             return true;
         } else {
-            Log.w(TAG, "Bluetooth connection state is not connected.");
+            Log.w(TAG, "Bluetooth is not connected.");
             return false;
         }
     }
@@ -976,7 +976,7 @@ public class AmazonFreeRTOSDevice {
                     UUID_IOT_ENDPOINT, UUID_DEVICE_INFORMATION_SERVICE));
             return true;
         } else {
-            Log.w(TAG, "Bluetooth connection state is not connected.");
+            Log.w(TAG, "Bluetooth is not connected.");
             return false;
         }
     }
@@ -988,7 +988,7 @@ public class AmazonFreeRTOSDevice {
                     UUID_DEVICE_VERSION, UUID_DEVICE_INFORMATION_SERVICE));
             return true;
         } else {
-            Log.w(TAG, "Bluetooth connection state is not connected.");
+            Log.w(TAG, "Bluetooth is not connected.");
             return false;
         }
     }
@@ -1000,7 +1000,7 @@ public class AmazonFreeRTOSDevice {
                     UUID_DEVICE_PLATFORM, UUID_DEVICE_INFORMATION_SERVICE));
             return true;
         } else {
-            Log.w(TAG, "Bluetooth connection state is not connected.");
+            Log.w(TAG, "Bluetooth is not connected.");
             return false;
         }
     }
@@ -1012,7 +1012,7 @@ public class AmazonFreeRTOSDevice {
                     UUID_DEVICE_ID, UUID_DEVICE_INFORMATION_SERVICE));
             return true;
         } else {
-            Log.w(TAG, "Bluetooth connection state is not connected.");
+            Log.w(TAG, "Bluetooth is not connected.");
             return false;
         }
     }
