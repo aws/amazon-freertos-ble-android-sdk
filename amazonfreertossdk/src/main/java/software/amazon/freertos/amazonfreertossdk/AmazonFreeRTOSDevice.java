@@ -171,10 +171,10 @@ public class AmazonFreeRTOSDevice {
         mPacketCount = 1;
     }
 
+    /**
+     * User initiated disconnect
+     */
     void disconnect() {
-        /**
-         * User initiated disconnect
-         */
         if (mBluetoothGatt != null) {
             mGattAutoReconnect = false;
             mBluetoothGatt.disconnect();
@@ -420,10 +420,19 @@ public class AmazonFreeRTOSDevice {
                             //broadcastUpdate(intentAction);
                         }
                     } else {
+                        Log.i(TAG, "Disconnected from GATT server due to error ot peripheral initiated disconnect.");
+
                         mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED;
-                        gatt.close();
-                        mBluetoothGatt = null;
-                        disconnect();
+
+                        if (mMqttConnectionState != AmazonFreeRTOSConstants.MqttConnectionState.MQTT_Disconnected) {
+                            disconnectFromIot();
+                        }
+
+                        if (!mGattAutoReconnect) {
+                            gatt.close();
+                            mBluetoothGatt = null;
+                        }
+                        cleanUp();
                     }
                     mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
                 }
