@@ -76,7 +76,7 @@ public class DeviceScanFragment extends Fragment {
                 boolean autoReconnect = true;
                 @Override
                 public void onCheckedChanged(CompoundButton v, boolean isChecked) {
-                    Log.i(TAG, "connect switch isChecked: " + (isChecked ? "ON":"OFF"));
+                    Log.i(TAG, "Connect switch isChecked: " + (isChecked ? "ON":"OFF"));
                     if (isChecked) {
                         if (aDevice == null) {
                             AWSCredentialsProvider credentialsProvider = AWSMobileClient.getInstance();
@@ -131,7 +131,7 @@ public class DeviceScanFragment extends Fragment {
             @Override
             public void onBleConnectionStatusChanged(AmazonFreeRTOSConstants.BleConnectionState connectionStatus) {
                 Log.i(TAG, "BLE connection status changed to: " + connectionStatus);
-                if (connectionStatus == AmazonFreeRTOSConstants.BleConnectionState.BLE_CONNECTED) {
+                if (connectionStatus == AmazonFreeRTOSConstants.BleConnectionState.BLE_INITIALIZED) {
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -210,7 +210,7 @@ public class DeviceScanFragment extends Fragment {
         scanButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.i(TAG, "scan button clicked.");
+                Log.i(TAG, "Scan button clicked.");
                 mAmazonFreeRTOSManager.startScanDevices(new BleScanResultCallback() {
                     @Override
                     public void onBleScanResult(ScanResult result) {
@@ -263,7 +263,7 @@ public class DeviceScanFragment extends Fragment {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_ENABLE_BT) {
             if (resultCode == getActivity().RESULT_OK) {
-                Log.i(TAG, "successfully enabled bluetooth");
+                Log.i(TAG, "Successfully enabled bluetooth");
             } else {
                 Log.w(TAG, "Failed to enable bluetooth");
             }
