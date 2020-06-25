@@ -25,10 +25,13 @@ import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.os.Handler;
 import android.os.HandlerThread;
+
 import java.security.KeyStore;
 import java.util.Arrays;
+
 import android.os.ParcelUuid;
 import android.util.Log;
+
 import com.amazonaws.auth.AWSCredentialsProvider;
 
 import java.util.HashMap;
@@ -61,8 +64,9 @@ public class AmazonFreeRTOSManager {
 
     /**
      * Construct an AmazonFreeRTOSManager instance.
-     * @param context The app context. Should be passed in by the app that creates a new instance
-     *                of AmazonFreeRTOSManager.
+     *
+     * @param context          The app context. Should be passed in by the app that creates a new instance
+     *                         of AmazonFreeRTOSManager.
      * @param bluetoothAdapter BluetoothAdaptor passed in by the app.
      */
     public AmazonFreeRTOSManager(Context context, BluetoothAdapter bluetoothAdapter) {
@@ -73,6 +77,7 @@ public class AmazonFreeRTOSManager {
     /**
      * Setting the criteria for which exact the BLE devices to scan for. This overrides the default
      * mScanFilters which is by default set to scan for UUID_AmazonFreeRTOS.
+     *
      * @param filters The list of ScanFilter for BLE devices.
      */
     public void setScanFilters(List<ScanFilter> filters) {
@@ -86,6 +91,7 @@ public class AmazonFreeRTOSManager {
      * The scan result is passed back through the BleScanResultCallback. If at the time of calling
      * this API, there's already an ongoing scanning, then this will return immediately without
      * starting another scan.
+     *
      * @param scanResultCallback The callback to notify the calling app of the scanning result. The
      *                           callback will be triggered, every time it finds a BLE device
      *                           nearby that meets the ScanFilter criteria.
@@ -96,8 +102,9 @@ public class AmazonFreeRTOSManager {
 
     /**
      * Start scanning nearby BLE devices for a total duration of scanDuration milliseconds.
+     *
      * @param scanResultCallback The callback to notify the calling app of the scanning result.
-     * @param scanDuration The duration of scanning. Keep scanning if 0.
+     * @param scanDuration       The duration of scanning. Keep scanning if 0.
      */
     public void startScanDevices(final BleScanResultCallback scanResultCallback, long scanDuration) {
         if (scanResultCallback == null) {
@@ -106,7 +113,7 @@ public class AmazonFreeRTOSManager {
         mBleScanResultCallback = scanResultCallback;
         if (mBluetoothAdapter != null) {
             mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
-            if ( mScanHandlerThread == null ) {
+            if (mScanHandlerThread == null) {
                 mScanHandlerThread = new HandlerThread("ScanBleDeviceThread");
                 mScanHandlerThread.start();
                 mScanHandler = new Handler(mScanHandlerThread.getLooper());
@@ -173,14 +180,15 @@ public class AmazonFreeRTOSManager {
 
     /**
      * Connect to the BLE device, and notify the connection state via BleConnectionStatusCallback.
+     *
      * @param connectionStatusCallback The callback to notify app whether the BLE connection is
      *                                 successful. Must not be null.
-     * @param btDevice the BLE device to be connected to.
-     * @param cp the AWSCredential used to connect to AWS IoT.
-     * @param autoReconnect auto reconnect to device after unexpected disconnect
+     * @param btDevice                 the BLE device to be connected to.
+     * @param cp                       the AWSCredential used to connect to AWS IoT.
+     * @param autoReconnect            auto reconnect to device after unexpected disconnect
      */
     public AmazonFreeRTOSDevice connectToDevice(@NonNull final BluetoothDevice btDevice,
-                                @NonNull final BleConnectionStatusCallback connectionStatusCallback,
+                                                @NonNull final BleConnectionStatusCallback connectionStatusCallback,
                                                 final AWSCredentialsProvider cp,
                                                 final boolean autoReconnect) {
         AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext, cp);
@@ -191,11 +199,12 @@ public class AmazonFreeRTOSManager {
 
     /**
      * Connect to the BLE device, and notify the connection state via BleConnectionStatusCallback.
+     *
      * @param connectionStatusCallback The callback to notify app whether the BLE connection is
      *                                 successful. Must not be null.
-     * @param btDevice the BLE device to be connected to.
-     * @param ks the KeyStore that contains certificate used to connect to AWS IoT.
-     * @param autoReconnect auto reconnect to device after unexpected disconnect
+     * @param btDevice                 the BLE device to be connected to.
+     * @param ks                       the KeyStore that contains certificate used to connect to AWS IoT.
+     * @param autoReconnect            auto reconnect to device after unexpected disconnect
      */
     public AmazonFreeRTOSDevice connectToDevice(@NonNull final BluetoothDevice btDevice,
                                                 @NonNull final BleConnectionStatusCallback connectionStatusCallback,
@@ -209,6 +218,7 @@ public class AmazonFreeRTOSManager {
 
     /**
      * Closing BLE connection for the AmazonFreeRTOSDevice, reset all variables, and disconnect from AWS IoT.
+     *
      * @param aDevice The AmazonFreeRTOSDevice to be disconnected.
      */
     public void disconnectFromDevice(@NonNull final AmazonFreeRTOSDevice aDevice) {
@@ -218,6 +228,7 @@ public class AmazonFreeRTOSManager {
 
     /**
      * Get the instance of AmazonFreeRTOSDevice given the mac address of the BLE device
+     *
      * @param macAddr the mac address of the connected BLE device
      * @return the corresponding AmazonFreeRTOSDevice instance that represents the connected BLE device.
      */
