@@ -483,8 +483,7 @@ public class AmazonFreeRTOSDevice {
                 public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
                     Log.i(TAG, "onMTUChanged : " + mtu + " status: " + (status == 0 ? "Success" : status));
                     mMtu = mtu;
-                    mMaxPayloadLen = mMtu - 3;
-                    mMaxPayloadLen = Math.max(mMaxPayloadLen, 0);
+                    mMaxPayloadLen = Math.max(mMtu - 3, 0);
                     // The BLE service should be initialized at this stage
                     if (mBleConnectionState == BleConnectionState.BLE_INITIALIZING) {
                         mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_INITIALIZED;
@@ -554,8 +553,7 @@ public class AmazonFreeRTOSDevice {
                                 Log.i(TAG, "Default MTU is set to: " + currentMtu.mtu);
                                 try {
                                     mMtu = Integer.parseInt(currentMtu.mtu);
-                                    mMaxPayloadLen = mMtu - 3;
-                                    mMaxPayloadLen = Math.max(mMaxPayloadLen, 0);
+                                    mMaxPayloadLen = Math.max(mMtu - 3, 0);
                                     if (mDeviceInfoCallback != null) {
                                         mDeviceInfoCallback.onObtainMtu(mMtu);
                                     }
