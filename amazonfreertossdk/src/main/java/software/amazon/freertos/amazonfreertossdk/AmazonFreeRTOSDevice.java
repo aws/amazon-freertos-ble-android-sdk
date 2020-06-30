@@ -22,7 +22,10 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
@@ -59,6 +62,7 @@ import lombok.NonNull;
 import software.amazon.freertos.amazonfreertossdk.mqttproxy.*;
 import software.amazon.freertos.amazonfreertossdk.networkconfig.*;
 
+import static android.bluetooth.BluetoothDevice.BOND_BONDING;
 import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 import static software.amazon.freertos.amazonfreertossdk.AmazonFreeRTOSConstants.*;
 import static software.amazon.freertos.amazonfreertossdk.AmazonFreeRTOSConstants.AmazonFreeRTOSError.BLE_DISCONNECTED_ERROR;
@@ -86,6 +90,7 @@ public class AmazonFreeRTOSDevice {
     private String mAmazonFreeRTOSDeviceType = "NA";
     private String mAmazonFreeRTOSDeviceId = "NA";
     private boolean mGattAutoReconnect = false;
+    private BroadcastReceiver mBondStateCallback = null;
     private int mMtu = 0;
 
     private boolean rr = false;
@@ -156,7 +161,7 @@ public class AmazonFreeRTOSDevice {
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper());
         mGattAutoReconnect = autoReconnect;
-        mBluetoothGatt = mBluetoothDevice.connectGatt(mContext, autoReconnect, mGattCallback, TRANSPORT_LE);
+        mBluetoothGatt = mBluetoothDevice.connectGatt(mContext, false, mGattCallback, TRANSPORT_LE);
     }
 
     private void cleanUp() {
@@ -381,6 +386,54 @@ public class AmazonFreeRTOSDevice {
         }
     }
 
+    private void registerBondStateCallback() {
+
+        mBondStateCallback = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+                switch (action) {
+                    case BluetoothDevice.ACTION_BOND_STATE_CHANGED: {
+                        int prev = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, BluetoothDevice.ERROR);
+                        int now = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
+                        Log.d(TAG, "Bond state changed from " + prev + " to " + now);
+                        /**
+                         * If the state changed from bonding to bonded, then we have a valid bond created
+                         * for the device.
+                         * If discovery is not performed initiate discovery.
+                         * If services are discovered start initialization by reading device version characteristic.
+                         */
+                        if (prev == BluetoothDevice.BOND_BONDING && now == BluetoothDevice.BOND_BONDED) {
+                            List<BluetoothGattService> services = mBluetoothGatt.getServices();
+                            if (services == null || services.isEmpty()) {
+                                discoverServices();
+                            } else {
+                                probe();
+                            }
+                        }
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+        };
+
+        final IntentFilter bondFilter = new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+        mContext.registerReceiver(mBondStateCallback, bondFilter);
+    }
+
+    private void unRegisterBondStateCallback() {
+        if (mBondStateCallback != null) {
+            try {
+                mContext.unregisterReceiver(mBondStateCallback);
+                mBondStateCallback = null;
+            } catch (IllegalArgumentException ex) {
+                Log.w(TAG, "Caught exception while unregistering broadcast receiver" );
+            }
+        }
+    }
+
     /**
      * This is the callback for all BLE commands sent from SDK to device. The response of BLE
      * command is included in the callback, together with the status code.
@@ -398,9 +451,14 @@ public class AmazonFreeRTOSDevice {
 
                             mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_CONNECTED;
                             Log.i(TAG, "Connected to GATT server.");
+
                             // If the device is already bonded or will not bond we can call discoverServices() immediately
-                            if (bondState == BluetoothDevice.BOND_NONE || bondState == BluetoothDevice.BOND_BONDED) {
+                            if (mBluetoothDevice.getBondState() != BOND_BONDING) {
                                 discoverServices();
+                            }
+                            else
+                            {
+                                registerBondStateCallback();
                             }
                         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                             mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED;
@@ -411,12 +469,26 @@ public class AmazonFreeRTOSDevice {
                                 disconnectFromIot();
                             }
 
-                            // If not using auto reconnect or if user initiated disconnect
+                            unRegisterBondStateCallback();
+
+                            cleanUp();
+
+                            mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
+
+                            /**
+                             * If auto reconnect is enabled, start a reconnect procedure in background
+                             * using connect() method. Else close the GATT.
+                             * Auto reconnect will be disabled when user initiates disconnect.
+                             */
                             if (!mGattAutoReconnect) {
                                 gatt.close();
                                 mBluetoothGatt = null;
                             }
-                            cleanUp();
+                            else
+                            {
+                                mBluetoothGatt.connect();
+                            }
+
                         }
                     } else {
                         Log.i(TAG, "Disconnected from GATT server due to error ot peripheral initiated disconnect.");
@@ -427,13 +499,27 @@ public class AmazonFreeRTOSDevice {
                             disconnectFromIot();
                         }
 
+                        unRegisterBondStateCallback();
+
+                        cleanUp();
+
+                        mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
+
+                        /**
+                         * If auto reconnect is enabled, start a reconnect procedure in background
+                         * using connect() method. Else close the GATT.
+                         * Auto reconnect will be disabled when user initiates disconnect.
+                         */
                         if (!mGattAutoReconnect) {
                             gatt.close();
                             mBluetoothGatt = null;
                         }
-                        cleanUp();
+                        else
+                        {
+                            mBluetoothGatt.connect();
+                        }
                     }
-                    mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
+
                 }
 
                 @Override
@@ -443,6 +529,11 @@ public class AmazonFreeRTOSDevice {
                         Log.i(TAG, "Discovered Ble gatt services successfully. Bonding state: "
                                 + mBluetoothDevice.getBondState());
                         describeGattServices(mBluetoothGatt.getServices());
+
+                        /**
+                         *  Trigger bonding if needed, by reading device version characteristic, if bonding is not already
+                         *  in progress by the stack.
+                         */
                         if (mBluetoothDevice.getBondState() != BluetoothDevice.BOND_BONDING) {
                             probe();
                         }
