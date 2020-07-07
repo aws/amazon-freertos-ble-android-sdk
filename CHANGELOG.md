@@ -1,5 +1,8 @@
 # Release notes for FreeRTOS BLE Mobile SDK for Android
-
+## v1.2.0 7/7/2020
+   - Fixes in the connection logic of SDK with BLE devices.
+   - Add new states and notifications for BLE connection within SDK.
+   - Modifications in auto-reconnect logic to handle devices with Resolvable Private Address(RPA) enabled.
 ## v1.1.0 2/11/2019
    Name change from Amazon FreeRTOS to FreeRTOS
 ## v1.0.0 6/17/2019
