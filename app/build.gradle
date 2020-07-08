@@ -19,7 +19,7 @@ android {
 }
 
 dependencies {
-    implementation ('software.amazon.freertos:amazonfreertossdk:1.0.0')
+    implementation ('software.amazon.freertos:amazonfreertossdk:1.2.0')
     implementation('com.amazonaws:aws-android-sdk-mobile-client:2.13.5')
     implementation('com.amazonaws:aws-android-sdk-auth-userpools:2.13.5')
     implementation('com.amazonaws:aws-android-sdk-auth-ui:2.13.5')
