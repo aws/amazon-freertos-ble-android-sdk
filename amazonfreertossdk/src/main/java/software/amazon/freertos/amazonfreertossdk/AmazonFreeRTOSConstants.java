@@ -78,7 +78,10 @@ public class AmazonFreeRTOSConstants {
     }
 
     public enum AmazonFreeRTOSError {
-        BLE_DISCONNECTED_ERROR
+        BLE_NO_ERROR,
+        BLE_DISCONNECTED_ERROR,
+        BLE_EMPTY_BROKER_ENDPOINT,
+        BLE_EMPTY_MQTT_CLIENT_ID
     }
 
     /**

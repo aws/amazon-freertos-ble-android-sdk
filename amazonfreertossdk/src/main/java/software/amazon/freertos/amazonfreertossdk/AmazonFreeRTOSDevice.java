@@ -65,7 +65,7 @@ import software.amazon.freertos.amazonfreertossdk.networkconfig.*;
 import static android.bluetooth.BluetoothDevice.BOND_BONDING;
 import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 import static software.amazon.freertos.amazonfreertossdk.AmazonFreeRTOSConstants.*;
-import static software.amazon.freertos.amazonfreertossdk.AmazonFreeRTOSConstants.AmazonFreeRTOSError.BLE_DISCONNECTED_ERROR;
+import static software.amazon.freertos.amazonfreertossdk.AmazonFreeRTOSConstants.AmazonFreeRTOSError.*;
 import static software.amazon.freertos.amazonfreertossdk.BleCommand.CommandType.DISCOVER_SERVICES;
 import static software.amazon.freertos.amazonfreertossdk.BleCommand.CommandType.NOTIFICATION;
 import static software.amazon.freertos.amazonfreertossdk.BleCommand.CommandType.READ_CHARACTERISTIC;
@@ -113,6 +113,9 @@ public class AmazonFreeRTOSDevice {
     private int mPacketCount = 1;
     private int mMessageId = 0;
     private int mMaxPayloadLen = 0;
+    private byte mWifiProvReady = 0;
+    private byte mProxyReady = 0;
+    private AmazonFreeRTOSError mError = AmazonFreeRTOSError.BLE_NO_ERROR;
 
     private AWSIotMqttManager mIotMqttManager;
     private MqttConnectionState mMqttConnectionState = MqttConnectionState.MQTT_Disconnected;
@@ -299,6 +302,36 @@ public class AmazonFreeRTOSDevice {
         }
     }
 
+    /**
+     * Device Manager's latest error code is track via errorStatus. It can send this error to the
+     * device via the upper 7-bits of the CONTROL gatt characteristic. Lowest bit is for ready-state
+     */
+    public void sendErrorStatus(String sUUID, AmazonFreeRTOSError newError)
+    {
+        mError = newError;
+        byte error = (byte)mError.ordinal();
+        byte[] control = new byte[1];
+
+        switch (sUUID)
+        {
+            case UUID_NETWORK_SERVICE:
+                control[0] = (byte)(( error << 1 ) | (mWifiProvReady & 0x1));
+                sendBleCommand(new BleCommand(WRITE_CHARACTERISTIC,
+                                              UUID_NETWORK_CONTROL,
+                                              UUID_NETWORK_SERVICE,
+                                              control));
+                break;
+            case UUID_MQTT_PROXY_SERVICE:
+                control[0] = (byte)(( error << 1 ) | (mProxyReady & 0x1));
+                sendBleCommand(new BleCommand(WRITE_CHARACTERISTIC,
+                                              UUID_MQTT_PROXY_CONTROL,
+                                              UUID_MQTT_PROXY_SERVICE,
+                                              control));
+                break;
+            default:
+                Log.w(TAG, "Unknown service. Ignoring.");
+        }
+    }
     /**
      * Try to read a characteristic from the Gatt service. If pairing is enabled, it will be triggered
      * by this action.
@@ -729,6 +762,17 @@ public class AmazonFreeRTOSDevice {
             case MQTT_MSG_CONNECT:
                 final Connect connect = new Connect();
                 if (connect.decode(message)) {
+                    if (connect.clientID == null || connect.clientID.isEmpty())
+                    {
+                        sendErrorStatus(UUID_MQTT_PROXY_SERVICE, BLE_EMPTY_MQTT_CLIENT_ID);
+                    }
+                    if (connect.brokerEndpoint == null || connect.brokerEndpoint.isEmpty())
+                    {
+                        sendErrorStatus(UUID_MQTT_PROXY_SERVICE, BLE_EMPTY_BROKER_ENDPOINT);
+                    }
+
+                    /* No need to verify, internally this call contains soft-exceptions and safely
+                     * fails if either of the credentials were wrong */
                     connectToIoT(connect);
                 }
                 break;
@@ -840,6 +884,7 @@ public class AmazonFreeRTOSDevice {
             Log.w(TAG, "Previous connection is active, please retry or disconnect mqtt first.");
             return;
         }
+
         mIotMqttManager = new AWSIotMqttManager(connect.clientID, connect.brokerEndpoint);
 
         Map<String, String> userMetaData = new HashMap<>();
