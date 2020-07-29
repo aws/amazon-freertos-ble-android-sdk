@@ -53,6 +53,10 @@ In project's `settings.gradle` file, add ':amazonfreertossdk'
 <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 ```
 
+3. Turn on phone's **Location Services**.
+
+In addition to adding location permissions, this is required by android to perform a successful BLE scan.
+
 ## Contents
 
 ### BLE Helper Functions
