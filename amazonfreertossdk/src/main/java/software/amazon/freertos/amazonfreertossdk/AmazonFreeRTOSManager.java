@@ -51,6 +51,7 @@ public class AmazonFreeRTOSManager {
     private Handler mScanHandler;
     private HandlerThread mScanHandlerThread;
     private boolean mScanning = false;
+    private boolean mCognitoSucceeded = true;
 
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
@@ -194,6 +195,7 @@ public class AmazonFreeRTOSManager {
         AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext, cp);
         mAFreeRTOSDevices.put(btDevice.getAddress(), aDevice);
         aDevice.connect(connectionStatusCallback, autoReconnect);
+        aDevice.setCognitoSucceeded(mCognitoSucceeded);
         return aDevice;
     }
 
@@ -213,6 +215,7 @@ public class AmazonFreeRTOSManager {
         AmazonFreeRTOSDevice aDevice = new AmazonFreeRTOSDevice(btDevice, mContext, ks);
         mAFreeRTOSDevices.put(btDevice.getAddress(), aDevice);
         aDevice.connect(connectionStatusCallback, autoReconnect);
+        aDevice.setCognitoSucceeded(mCognitoSucceeded);
         return aDevice;
     }
 
@@ -234,5 +237,15 @@ public class AmazonFreeRTOSManager {
      */
     public AmazonFreeRTOSDevice getConnectedDevice(String macAddr) {
         return mAFreeRTOSDevices.get(macAddr);
+    }
+
+    /**
+    *  All wifi-proxied devices depend on whether this phone is cognito authenticated
+    *
+    * @param status true if cognito succeeded else false
+    */
+    public void setCognitoSucceeded( boolean status )
+    {
+        mCognitoSucceeded = status;
     }
 }

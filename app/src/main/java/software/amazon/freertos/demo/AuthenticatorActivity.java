@@ -19,6 +19,8 @@ import com.amazonaws.services.iot.model.AttachPolicyRequest;
 
 import java.util.concurrent.CountDownLatch;
 
+import software.amazon.freertos.amazonfreertossdk.AmazonFreeRTOSManager;
+
 public class AuthenticatorActivity extends AppCompatActivity {
     private final static String TAG = "AuthActivity";
     private HandlerThread handlerThread;
@@ -103,6 +105,9 @@ public class AuthenticatorActivity extends AppCompatActivity {
     }
 
     private void signinsuccessful() {
+        /* Manager singleton is initialized before this call. Querying null returns existing handle */
+        AmazonFreeRTOSManager mAFRManager = AmazonFreeRTOSAgent.getAmazonFreeRTOSManager(null);
+
         try {
             AWSCredentialsProvider credentialsProvider = AWSMobileClient.getInstance();
             AWSIotClient awsIotClient = new AWSIotClient(credentialsProvider);
@@ -112,8 +117,10 @@ public class AuthenticatorActivity extends AppCompatActivity {
                     .withPolicyName(DemoConstants.AWS_IOT_POLICY_NAME)
                     .withTarget(AWSMobileClient.getInstance().getIdentityId());
             awsIotClient.attachPolicy(attachPolicyRequest);
+            mAFRManager.setCognitoSucceeded(true);
             Log.i(TAG, "Iot policy attached successfully.");
         } catch (Exception e) {
+            mAFRManager.setCognitoSucceeded(false);
             Log.e(TAG, "Exception caught: ", e);
         }
     }

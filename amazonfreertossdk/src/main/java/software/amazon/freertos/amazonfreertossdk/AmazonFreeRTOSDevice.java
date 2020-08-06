@@ -97,6 +97,8 @@ public class AmazonFreeRTOSDevice {
     private Queue<BleCommand> mMqttQueue = new LinkedList<>();
     private Queue<BleCommand> mNetworkQueue = new LinkedList<>();
     private Queue<BleCommand> mIncomingQueue = new LinkedList<>();
+    private Queue<AmazonFreeRTOSError> mWifiProvisionErrorQueue = new LinkedList<>();
+    private Queue<AmazonFreeRTOSError> mWifiProxyErrorQueue = new LinkedList<>();
     private boolean mBleOperationInProgress = false;
     private boolean mRWinProgress = false;
     private Handler mHandler;
@@ -113,15 +115,15 @@ public class AmazonFreeRTOSDevice {
     private int mPacketCount = 1;
     private int mMessageId = 0;
     private int mMaxPayloadLen = 0;
-    private byte mWifiProvReady = 0;
-    private byte mProxyReady = 0;
-    private AmazonFreeRTOSError mError = AmazonFreeRTOSError.BLE_NO_ERROR;
+    private int mWifiProvisionReady = 0;
+    private int mWifiProxyReady = 0;
 
     private AWSIotMqttManager mIotMqttManager;
     private MqttConnectionState mMqttConnectionState = MqttConnectionState.MQTT_Disconnected;
 
     private AWSCredentialsProvider mAWSCredential;
     private KeyStore mKeystore;
+    private boolean mCognitoSucceeded = true;
 
     /**
      * Construct an AmazonFreeRTOSDevice instance.
@@ -178,6 +180,8 @@ public class AmazonFreeRTOSDevice {
         mTxLargeObject.reset();
         mTotalPackets = 0;
         mPacketCount = 1;
+        mWifiProvisionReady = 0;
+        mWifiProxyReady = 0;
     }
 
     /**
@@ -303,35 +307,61 @@ public class AmazonFreeRTOSDevice {
     }
 
     /**
-     * Device Manager's latest error code is track via errorStatus. It can send this error to the
-     * device via the upper 7-bits of the CONTROL gatt characteristic. Lowest bit is for ready-state
+     * Upper 7-bits of the CONTROL gatt characteristic. Lowest bit is for ready-state
      */
-    public void sendErrorStatus(String sUUID, AmazonFreeRTOSError newError)
+    private void sendWifiProvisionError(AmazonFreeRTOSError error)
     {
-        mError = newError;
-        byte error = (byte)mError.ordinal();
+        int errorValue = error.ordinal();
         byte[] control = new byte[1];
+        control[0] = (byte)(( errorValue << 1 ) | (mWifiProvisionReady & 0x1));
 
-        switch (sUUID)
+        sendBleCommand(new BleCommand(WRITE_CHARACTERISTIC,
+                                      UUID_NETWORK_CONTROL,
+                                      UUID_NETWORK_SERVICE,
+                                      control));
+    }
+
+    private void sendWifiProxyError(AmazonFreeRTOSError error)
+    {
+        int errorValue = error.ordinal();
+        byte[] control = new byte[1];
+        control[0] = (byte)(( errorValue << 1 ) | (mWifiProxyReady & 0x1));
+
+        sendBleCommand(new BleCommand(WRITE_CHARACTERISTIC,
+                                      UUID_MQTT_PROXY_CONTROL,
+                                      UUID_MQTT_PROXY_SERVICE,
+                                      control));
+    }
+
+    private int processErrorQueues()
+    {
+        int n_processed = 0;
+
+        while(isBLEConnected() && !mWifiProvisionErrorQueue.isEmpty())
         {
-            case UUID_NETWORK_SERVICE:
-                control[0] = (byte)(( error << 1 ) | (mWifiProvReady & 0x1));
-                sendBleCommand(new BleCommand(WRITE_CHARACTERISTIC,
-                                              UUID_NETWORK_CONTROL,
-                                              UUID_NETWORK_SERVICE,
-                                              control));
-                break;
-            case UUID_MQTT_PROXY_SERVICE:
-                control[0] = (byte)(( error << 1 ) | (mProxyReady & 0x1));
-                sendBleCommand(new BleCommand(WRITE_CHARACTERISTIC,
-                                              UUID_MQTT_PROXY_CONTROL,
-                                              UUID_MQTT_PROXY_SERVICE,
-                                              control));
-                break;
-            default:
-                Log.w(TAG, "Unknown service. Ignoring.");
+            sendWifiProvisionError(mWifiProvisionErrorQueue.remove());
+            n_processed++;
+        }
+
+        while (isBLEConnected() && !mWifiProxyErrorQueue.isEmpty())
+        {
+            sendWifiProxyError(mWifiProxyErrorQueue.remove());
+            n_processed++;
+        }
+
+        return n_processed;
+    }
+
+    public void setCognitoSucceeded( boolean status )
+    {
+        mCognitoSucceeded = status;
+
+        if (!mCognitoSucceeded)
+        {
+            mWifiProxyErrorQueue.add(BLE_COGNITO_AUTH_FAIL);
         }
     }
+
     /**
      * Try to read a characteristic from the Gatt service. If pairing is enabled, it will be triggered
      * by this action.
@@ -364,11 +394,13 @@ public class AmazonFreeRTOSDevice {
             case UUID_NETWORK_SERVICE:
                 Log.i(TAG, (enable ? "Enabling" : "Disabling") + " Wifi provisioning");
                 sendBleCommand(new BleCommand(WRITE_CHARACTERISTIC, UUID_NETWORK_CONTROL, UUID_NETWORK_SERVICE, ready));
+                mWifiProvisionReady = 1;
                 break;
             case UUID_MQTT_PROXY_SERVICE:
                 if (mKeystore != null || mAWSCredential != null) {
                     Log.i(TAG, (enable ? "Enabling" : "Disabling") + " MQTT Proxy");
                     sendBleCommand(new BleCommand(WRITE_CHARACTERISTIC, UUID_MQTT_PROXY_CONTROL, UUID_MQTT_PROXY_SERVICE, ready));
+                    mWifiProxyReady = 1;
                 }
                 break;
             default:
@@ -414,6 +446,9 @@ public class AmazonFreeRTOSDevice {
                 }
             }
             mIncomingMutex.release();
+
+            /* Transmit any errors to corresponding services */
+            processErrorQueues();
         } catch (InterruptedException e) {
             Log.e(TAG, "Incoming mutex error, ", e);
         }
@@ -764,12 +799,13 @@ public class AmazonFreeRTOSDevice {
                 if (connect.decode(message)) {
                     if (connect.clientID == null || connect.clientID.isEmpty())
                     {
-                        sendErrorStatus(UUID_MQTT_PROXY_SERVICE, BLE_EMPTY_MQTT_CLIENT_ID);
+                        mWifiProxyErrorQueue.add( BLE_EMPTY_MQTT_CLIENT_ID );
                     }
                     if (connect.brokerEndpoint == null || connect.brokerEndpoint.isEmpty())
                     {
-                        sendErrorStatus(UUID_MQTT_PROXY_SERVICE, BLE_EMPTY_BROKER_ENDPOINT);
+                        mWifiProxyErrorQueue.add( BLE_EMPTY_BROKER_ENDPOINT );
                     }
+                    processErrorQueues();
 
                     /* No need to verify, internally this call contains soft-exceptions and safely
                      * fails if either of the credentials were wrong */

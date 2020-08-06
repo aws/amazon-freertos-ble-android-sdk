@@ -81,7 +81,8 @@ public class AmazonFreeRTOSConstants {
         BLE_NO_ERROR,
         BLE_DISCONNECTED_ERROR,
         BLE_EMPTY_BROKER_ENDPOINT,
-        BLE_EMPTY_MQTT_CLIENT_ID
+        BLE_EMPTY_MQTT_CLIENT_ID,
+        BLE_COGNITO_AUTH_FAIL
     }
 
     /**
