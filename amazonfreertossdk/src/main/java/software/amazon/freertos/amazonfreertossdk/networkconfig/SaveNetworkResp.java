@@ -27,10 +27,12 @@ import co.nstant.in.cbor.model.Map;
 
 import co.nstant.in.cbor.model.UnicodeString;
 import co.nstant.in.cbor.model.UnsignedInteger;
+import lombok.Getter;
 
 /**
  * Save network response
  */
+@Getter
 public class SaveNetworkResp {
     /**
      * Status of the operation. 0 for success.
