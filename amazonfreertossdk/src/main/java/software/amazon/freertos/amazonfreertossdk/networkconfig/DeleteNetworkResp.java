@@ -26,10 +26,12 @@ import co.nstant.in.cbor.model.DataItem;
 import co.nstant.in.cbor.model.Map;
 import co.nstant.in.cbor.model.UnicodeString;
 import co.nstant.in.cbor.model.UnsignedInteger;
+import lombok.Getter;
 
 /**
  * Delete network response
  */
+@Getter
 public class DeleteNetworkResp {
     /**
      * Status of the operation. 0 for success.
