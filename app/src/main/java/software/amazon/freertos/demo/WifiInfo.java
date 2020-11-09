@@ -8,7 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class WifiInfo {
-    private static String[] NETWORK_TYPES = {"Open", "WEP", "WPA", "WPA2", "WPA2-Enterprise", "Other"};
+    private static String[] NETWORK_TYPES = {"Open", "WEP", "WPA", "WPA2", "WPA2-Enterprise", "WPA3", "Other"};
     private String ssid;
     private byte[] bssid;
     private int rssi;
