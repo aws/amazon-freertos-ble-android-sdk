@@ -58,7 +58,9 @@ public class DeviceScanFragment extends Fragment {
 
         private BleDevice mBleDevice;
 
-        private boolean userDisconnect = true;
+        private AmazonFreeRTOSDevice aDevice = null;
+        private boolean autoReconnect = true;
+
         public BleDeviceHolder(LayoutInflater inflater, ViewGroup parent) {
             super(inflater.inflate(R.layout.list_device, parent, false));
             mBleDeviceNameTextView = (TextView) itemView.findViewById(R.id.device_name);
@@ -67,63 +69,67 @@ public class DeviceScanFragment extends Fragment {
             mMenuTextView = (TextView) itemView.findViewById(R.id.menu_option);
         }
 
+        private final CompoundButton.OnCheckedChangeListener deviceConnectListener =
+                new CompoundButton.OnCheckedChangeListener() {
+                    @Override
+                    public void onCheckedChanged(CompoundButton v, boolean isChecked) {
+                        Log.i(TAG, "Connect switch isChecked: " + (isChecked ? "ON" : "OFF"));
+                        if (isChecked) {
+                            connectDevice();
+                        } else {
+                            disconnectDevice();
+                            resetUI();
+                        }
+                    }
+        };
+
+        private void connectDevice() {
+            if (aDevice == null) {
+                AWSCredentialsProvider credentialsProvider = AWSMobileClient.getInstance();
+                aDevice = mAmazonFreeRTOSManager.connectToDevice(mBleDevice.getBluetoothDevice(),
+                        connectionStatusCallback, credentialsProvider, autoReconnect);
+            }
+        }
+
+        private void disconnectDevice() {
+            if (aDevice != null) {
+                /* Save to a temporary variable so that callback triggered will not disconnect twice. */
+                final AmazonFreeRTOSDevice deviceToDisconnect = aDevice;
+                aDevice = null;
+                mAmazonFreeRTOSManager.disconnectFromDevice(deviceToDisconnect);
+            }
+        }
+
+        private final View.OnClickListener deviceMenuListener = new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                Log.i(TAG, "Click menu.");
+                PopupMenu popup = new PopupMenu(getContext(), mMenuTextView);
+                popup.inflate(R.menu.options_menu);
+                popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem item) {
+                        switch (item.getItemId()) {
+                            case R.id.wifi_provisioning_menu_id:
+                                Intent intentToStartWifiProvision
+                                        = WifiProvisionActivity.newIntent(getActivity(), mBleDevice.getMacAddr());
+                                startActivity(intentToStartWifiProvision);
+                                return true;
+                            case R.id.mqtt_proxy_menu_id:
+                                Toast.makeText(getContext(),"Already signed in",Toast.LENGTH_SHORT).show();
+                                return true;
+                        }
+                        return false;
+                    }
+                });
+                popup.show();
+            }
+        };
+
         public void bind(BleDevice bleDevice) {
             mBleDevice = bleDevice;
             mBleDeviceNameTextView.setText(mBleDevice.getName());
             mBleDeviceMacTextView.setText(mBleDevice.getMacAddr());
-            mBleDeviceSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
-                AmazonFreeRTOSDevice aDevice = null;
-                boolean autoReconnect = true;
-                @Override
-                public void onCheckedChanged(CompoundButton v, boolean isChecked) {
-                    Log.i(TAG, "Connect switch isChecked: " + (isChecked ? "ON":"OFF"));
-                    if (isChecked) {
-                        if (aDevice == null) {
-                            AWSCredentialsProvider credentialsProvider = AWSMobileClient.getInstance();
-
-                            aDevice = mAmazonFreeRTOSManager.connectToDevice(mBleDevice.getBluetoothDevice(),
-                                    connectionStatusCallback, credentialsProvider, autoReconnect);
-                        }
-                    } else {
-                        if (userDisconnect || !autoReconnect) {
-                            if (aDevice != null) {
-                                mAmazonFreeRTOSManager.disconnectFromDevice(aDevice);
-                                aDevice = null;
-                            }
-                        } else {
-                            userDisconnect = true;
-                        }
-                        resetUI();
-                    }
-                }
-            });
-
-            mMenuTextView.setOnClickListener(new View.OnClickListener(){
-                @Override
-                public void onClick(View view) {
-                    Log.i(TAG, "Click menu.");
-                    PopupMenu popup = new PopupMenu(getContext(), mMenuTextView);
-                    popup.inflate(R.menu.options_menu);
-                    popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                        @Override
-                        public boolean onMenuItemClick(MenuItem item) {
-                            switch (item.getItemId()) {
-                                case R.id.wifi_provisioning_menu_id:
-                                    Intent intentToStartWifiProvision
-                                            = WifiProvisionActivity.newIntent(getActivity(), mBleDevice.getMacAddr());
-                                    startActivity(intentToStartWifiProvision);
-                                    return true;
-                                case R.id.mqtt_proxy_menu_id:
-                                    Toast.makeText(getContext(),"Already signed in",Toast.LENGTH_SHORT).show();
-                                    return true;
-                            }
-                            return false;
-                        }
-                    });
-                    popup.show();
-                }
-            });
-
             resetUI();
         }
 
@@ -141,7 +147,9 @@ public class DeviceScanFragment extends Fragment {
                         }
                     });
                 } else if (connectionStatus == AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED) {
-                    userDisconnect = false;
+                    if(!autoReconnect) {
+                        disconnectDevice();
+                    }
                     resetUI();
                 }
             }
@@ -151,9 +159,14 @@ public class DeviceScanFragment extends Fragment {
             getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
+                    /* Reset the UI without invoking the listeners */
+                    mBleDeviceSwitch.setOnCheckedChangeListener(null);
+                    mMenuTextView.setOnClickListener(null);
                     mMenuTextView.setEnabled(false);
                     mMenuTextView.setTextColor(Color.GRAY);
                     mBleDeviceSwitch.setChecked(false);
+                    mBleDeviceSwitch.setOnCheckedChangeListener(deviceConnectListener);
+                    mMenuTextView.setOnClickListener(deviceMenuListener);
                 }
             });
         }
