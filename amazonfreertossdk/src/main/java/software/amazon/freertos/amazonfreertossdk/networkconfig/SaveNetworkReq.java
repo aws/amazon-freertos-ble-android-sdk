@@ -49,6 +49,10 @@ public class SaveNetworkReq {
      * Current index of the network to be saved.
      */
     public int index;
+    /**
+     * Connect immediately or just save for later.
+     */
+    public boolean connect;
 
     private static final String TAG = "SaveNetworkRequest";
     private static final String INDEX_KEY = "g";
@@ -57,6 +61,7 @@ public class SaveNetworkReq {
     private static final String PSK_KEY = "m";
     private static final String SECURITY_KEY = "q";
     private static final String TYPE_KEY = "w";
+    private static final String CONNECT_KEY = "y";
 
     public byte[] encode() {
         byte[] SaveNetworkRequestBytes = null;
@@ -70,6 +75,7 @@ public class SaveNetworkReq {
                     .put(BSSID_KEY, bssid)
                     .put(PSK_KEY, psk)
                     .put(SECURITY_KEY, security)
+                    .put(CONNECT_KEY, connect)
                     .end()
                     .build());
             SaveNetworkRequestBytes = baos.toByteArray();
