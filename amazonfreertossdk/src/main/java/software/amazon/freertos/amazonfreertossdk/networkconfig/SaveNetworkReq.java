@@ -52,7 +52,7 @@ public class SaveNetworkReq {
     /**
      * Connect immediately or just save for later.
      */
-    public boolean connect;
+    public boolean connect = true;
 
     private static final String TAG = "SaveNetworkRequest";
     private static final String INDEX_KEY = "g";
