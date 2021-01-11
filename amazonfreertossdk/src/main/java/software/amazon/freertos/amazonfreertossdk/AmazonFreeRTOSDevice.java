@@ -434,6 +434,7 @@ public class AmazonFreeRTOSDevice {
         }
     }
 
+
     /**
      * This is the callback for all BLE commands sent from SDK to device. The response of BLE
      * command is included in the callback, together with the status code.
@@ -445,53 +446,21 @@ public class AmazonFreeRTOSDevice {
                                                     int newState) {
                     Log.i(TAG, "BLE connection state changed: " + status + "; new state: "
                             + AmazonFreeRTOSConstants.BleConnectionState.values()[newState]);
-                    if (status == BluetoothGatt.GATT_SUCCESS) {
-                        if (newState == BluetoothProfile.STATE_CONNECTED) {
-                            int bondState = mBluetoothDevice.getBondState();
+                    if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
+                        int bondState = mBluetoothDevice.getBondState();
 
-                            mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_CONNECTED;
-                            Log.i(TAG, "Connected to GATT server.");
+                        Log.i(TAG, "Connected to GATT server.");
+                        mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_CONNECTED;
+                        mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
 
-                            // If the device is already bonded or will not bond we can call discoverServices() immediately
-                            if (mBluetoothDevice.getBondState() != BOND_BONDING) {
-                                discoverServices();
-                            }
-                            else
-                            {
-                                registerBondStateCallback();
-                            }
-                        } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                            mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED;
-                            Log.i(TAG, "Disconnected from GATT server.");
-
-                            // If ble connection is closed, there's no need to keep mqtt connection open.
-                            if (mMqttConnectionState != AmazonFreeRTOSConstants.MqttConnectionState.MQTT_Disconnected) {
-                                disconnectFromIot();
-                            }
-
-                            unRegisterBondStateCallback();
-
-                            cleanUp();
-
-                            mBleConnectionStatusCallback.onBleConnectionStatusChanged(mBleConnectionState);
-
-                            /**
-                             * If auto reconnect is enabled, start a reconnect procedure in background
-                             * using connect() method. Else close the GATT.
-                             * Auto reconnect will be disabled when user initiates disconnect.
-                             */
-                            if (!mGattAutoReconnect) {
-                                gatt.close();
-                                mBluetoothGatt = null;
-                            }
-                            else
-                            {
-                                mBluetoothGatt.connect();
-                            }
-
+                        // If the device is already bonded or will not bond we can call discoverServices() immediately
+                        if (mBluetoothDevice.getBondState() != BOND_BONDING) {
+                            discoverServices();
+                        } else {
+                            registerBondStateCallback();
                         }
                     } else {
-                        Log.i(TAG, "Disconnected from GATT server due to error ot peripheral initiated disconnect.");
+                        Log.i(TAG, "Disconnected from GATT server due to error or peripheral initiated disconnect.");
 
                         mBleConnectionState = AmazonFreeRTOSConstants.BleConnectionState.BLE_DISCONNECTED;
 
@@ -513,9 +482,7 @@ public class AmazonFreeRTOSDevice {
                         if (!mGattAutoReconnect) {
                             gatt.close();
                             mBluetoothGatt = null;
-                        }
-                        else
-                        {
+                        } else {
                             mBluetoothGatt.connect();
                         }
                     }
