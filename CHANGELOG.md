@@ -1,4 +1,9 @@
 # Release notes for FreeRTOS BLE Mobile SDK for Android
+## v1.3.0 1/5/2022
+   - Adds connect field to SaveNetwork Request. This allows connecting to WiFi SSID immediately or save credentials for connecting to it later.
+   - Fixes a bug in disconnect callback in demo app.
+   - Add WPA3 to the list of WiFi Security enum types.
+   - Enable getters annotation for response classes.
 ## v1.2.0 7/7/2020
    - Fixes in the connection logic of SDK with BLE devices.
    - Add new states and notifications for BLE connection within SDK.
