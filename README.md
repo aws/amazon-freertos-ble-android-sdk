@@ -5,7 +5,7 @@
 Using the Android SDK for FreeRTOS Bluetooth Devices, you can create mobile applications that do the following:
 
 - Scan for and connect to nearby BLE devices running FreeRTOS
- 
+
 - Perform WiFi provisioning of the FreeRTOS BLE devices after connecting to them ( Only supported for Espressif ESP32-DevKitC )
 
 - Act as a proxy for transmitting MQTT messages between a device running FreeRTOS and the AWS IoT cloud
@@ -84,13 +84,13 @@ Provision the WiFi credential on the FreeRTOS device through the app. It provide
     DeleteNetwork
 ````
 
-### MQTT Proxy Service 
+### MQTT Proxy Service
 
 The MQTT proxy service controls the MQTT proxy. It allows the device to send and receive MQTT messages
 from the AWS IoT cloud through the phone, when this feature is enabled.
 
 
-You can find the documentation for these functions in [documentation](documentation).
+You can find the [API documentation](https://aws.github.io/amazon-freertos-ble-android-sdk/) for these functions in the docs directory of this repository and [on github pages](https://aws.github.io/amazon-freertos-ble-android-sdk/).
 
 
 ## Demo Application
@@ -99,4 +99,4 @@ The SDK includes a demo application that demonstrates some of the main features 
 
 ## License
 
-This library is licensed under the Apache 2.0 License. 
+This library is licensed under the Apache 2.0 License.
