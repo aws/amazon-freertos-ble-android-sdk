@@ -48,6 +48,7 @@ public class ListNetworkResp {
     private static final String RSSI_KEY = "p";
     private static final String CONNECTED_KEY = "e";
     private static final String INDEX_KEY = "g";
+    private static final String LAST_NETWORK_KEY = "l";
     /**
      * Status of the operation. 0 for success.
      */
@@ -82,10 +83,15 @@ public class ListNetworkResp {
      */
     private int index;
 
+    /**
+     * Whether this network is the last in the list.
+     */
+    private Boolean last = false;
+
     public String toString() {
         return String.format("List network response -> Status: %d ssid: %s bssid: %s security: %d hidden: %s" +
-                        " rssi: %d connected: %s index: %d", status, ssid, bytesToHexString(bssid), security,
-                hidden ? "true":"false", rssi, connected ? "true":"false", index);
+                        " rssi: %d connected: %s index: %d, last :%s", status, ssid, bytesToHexString(bssid), security,
+                hidden ? "true":"false", rssi, connected ? "true":"false", index, last ? "true" : "false");
     }
 
     public boolean decode(byte[] cborEncodedBytes) {
@@ -110,6 +116,11 @@ public class ListNetworkResp {
             connected = (((SimpleValue) dataItem).getSimpleValueType() == SimpleValueType.TRUE) ? true : false;
             dataItem = map.get(new UnicodeString(INDEX_KEY));
             index = ((Number) dataItem).getValue().intValue();
+            final UnicodeString lastNetworkKey = new UnicodeString(LAST_NETWORK_KEY);
+            if(map.getKeys().contains(lastNetworkKey)) {
+                dataItem = map.get(lastNetworkKey);
+                last = (((SimpleValue) dataItem).getSimpleValueType() == SimpleValueType.TRUE);
+            }
             return true;
         } catch (CborException e) {
             Log.e(TAG,"Failed to decode.", e);
