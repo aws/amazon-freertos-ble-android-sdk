@@ -1,10 +1,11 @@
 apply plugin: 'com.android.library'
-apply plugin: 'maven'
+apply plugin: 'maven-publish'
 apply plugin: 'signing'
 android {
     compileSdkVersion 26
 
     defaultConfig {
+
         minSdkVersion 23
         targetSdkVersion 26
         
@@ -35,35 +36,25 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.4'
 }
 
-task sourceJar(type: Jar) {
-    from android.sourceSets.main.java.srcDirs
-    classifier "source"
-}
-
-task javadoc(type: Javadoc) {
+task androidJavaDocs(type: Javadoc) {
     source = android.sourceSets.main.java.srcDirs
     classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-    destinationDir = file("../documentation/")
+    destinationDir = file("../docs/")
     failOnError false
 }
 
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from tasks.javadoc.destinationDir
+task androidJavaDocsJar(type: Jar, dependsOn: androidJavaDocs) {
+    archiveClassifier = 'javadoc'
+    from tasks.androidJavaDocs.destinationDir
 }
 
 task androidSourcesJar(type: Jar) {
-    classifier = 'sources'
+    archiveClassifier = 'sources'
     from android.sourceSets.main.java.srcDirs
 }
 
-artifacts {
-    archives javadocJar
-    archives androidSourcesJar
-}
-
 task copyLibs(type: Copy) {
-    from configurations.compile
+    from configurations.implementation
     into 'libs'
 }
 
@@ -73,54 +64,67 @@ configurations {
     }
 }
 
-signing {
-    sign configurations.archives
-}
+publishing {
+    publications {
+        pluginPublication(MavenPublication) {
+            groupId publishedGroupId
+            artifactId artifact
+            version = versionNumber
+            artifact androidJavaDocsJar
+            artifact androidSourcesJar
 
-version = versionNumber
-
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-            repository(url: "https://aws.oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                authentication(userName: ossrhUsername, password: ossrhPassword)
-            }
-
-            snapshotRepository(url: "https://aws.oss.sonatype.org/content/repositories/snapshots/") {
-                authentication(userName: ossrhUsername, password: ossrhPassword)
-            }
-
-            pom.project {
-                packaging 'aar'
-                groupId publishedGroupId
-                artifactId artifact
-
-                name libraryName
-                description libraryDescription
-                url siteUrl
+            pom {
+                packaging = "aar"
+                name = libraryName
+                description = libraryDescription
+                groupId = publishedGroupId
+                artifactId = artifact
+                url = siteUrl
 
                 licenses {
                     license {
-                        name licenseName
-                        url licenseUrl
-                        distribution 'repo'
+                        name = licenseName
+                        url = licenseUrl
+                        distribution = "repo"
                     }
                 }
                 developers {
                     developer {
-                        id developerId
-                        name developerName
-                        email developerEmail
+                        id = developerId
+                        name = developerName
+                        email = developerEmail
                     }
                 }
                 scm {
-                    connection gitUrl
-                    developerConnection gitUrl
-                    url gitUrl
+                    connection = gitUrl
+                    developerConnection = gitUrl
+                    url = gitUrl
                 }
+            }
+
+            afterEvaluate {
+                from components.release
             }
         }
     }
+
+    repositories {
+
+        maven {
+
+            def stagingRepoUrl = "https://aws.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            def snapshotsRepoUrl = "https://aws.oss.sonatype.org/content/repositories/snapshots/"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : stagingRepoUrl
+
+            credentials {
+                username ossrhUsername
+                password ossrhPassword
+
+            }
+        }
+    }
+}
+signing {
+    sign configurations.archives
+    sign publishing.publications.pluginPublication
 }
