@@ -3,7 +3,7 @@
 ## Announcement:
 As of July 20th, 2023, this repository is deprecated. The contents of this repository will remain available but we will no longer provide updates nor accept new contributions and pull requests. We recommend instead that you start [here](https://docs.amplify.aws/start/q/integration/android/) for creating interactions between an Android device and AWS. For Bluetooth Low Energy APIs we recommend you start [here](https://developer.android.com/guide/topics/connectivity/bluetooth/ble-overview).
 
-Since the initial release of this package, several new Android versions have been released bringing with them enhanced security and usability. AWS Amplify has also [release dozens of later versions](https://github.com/aws-amplify/aws-sdk-android/releases) of the [AWS SDK](https://github.com/aws-amplify/aws-sdk-android) with many new features and bug fixes.
+Since the initial release of this package, several new Android versions have been released bringing with them enhanced security and usability. AWS Amplify has also [released dozens of later versions](https://github.com/aws-amplify/aws-sdk-android/releases) of the [AWS SDK](https://github.com/aws-amplify/aws-sdk-android) with many new features and bug fixes.
 
 The amazon-freertos-ble-android-sdk is being deprecated to remove an example built on outdated code.
 
